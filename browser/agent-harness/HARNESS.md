@@ -111,22 +111,27 @@ This is the first CLI-Anything harness to use an MCP server as a backend.
 
 **Backend wrapper** (`domshell_backend.py`):
 - Uses `mcp` Python SDK with `stdio` transport
-- Spawns `npx @apireno/domshell` subprocess per command
+- Lazily opens one `domshell-proxy` subprocess per non-daemon `Session`
 - Async MCP interface wrapped in sync functions via `asyncio.run()`
 
 **Session management**:
-- MCP server is stateless (spawned per command)
+- `mcp_connection.py` owns the MCP transport in one task on a dedicated loop
+- Commands reuse that connection across synchronous wrapper calls
 - CLI maintains state (URL, working directory, history)
-- Daemon mode (`--daemon`) provides persistent connection
+- `Session.close()` releases the connection; CLI context cleanup calls it on exit
 
-### 2. Daemon Mode
+### 2. Connection Lifetime
 
-By default, each CLI command spawns a new MCP server process. This is simple but adds latency (~1-3s cold start).
+The ordinary REPL keeps its session connection alive between commands. A
+one-shot invocation closes its connection after the command, including all
+anchor/focus/action/restore steps. Direct Python callers use `with Session()`
+or explicitly call `close()`; direct backend calls without a session retain
+their one-call lifetime.
 
-**Daemon mode** (`--daemon` flag):
-- Spawns MCP server once, reuses connection
-- Much faster for interactive use
-- Requires explicit `daemon-start`/`daemon-stop`
+Transport exceptions and 60-second initialization/request timeouts tear down
+the connection. Failed commands are not replayed. A later request can reconnect
+with the saved lane ID. The existing process-wide `--daemon` path is separate
+from this per-session owner.
 
 ### 3. State Model
 
@@ -294,13 +299,12 @@ except Exception as e:
 
 ## Performance Considerations
 
-### Per-Command Overhead
+### Connection Startup
 
-Each command spawns `npx @apireno/domshell`:
-- **Cold start**: 1-3 seconds (first run, package download)
-- **Warm start**: ~100-500ms (subsequent runs)
-
-**Mitigation**: Use daemon mode for interactive sessions.
+The first browser operation in a session starts the proxy and initializes MCP.
+Subsequent operations reuse that process, including each step of a split
+wrapper. The owner serializes individual requests; callers should execute
+multi-step workflows sequentially to avoid interleaving browser actions.
 
 ### Accessibility Tree Size
 
@@ -340,5 +344,5 @@ The MCP backend pattern can be applied to any software that exposes an MCP serve
 1. Identify MCP server and tools
 2. Create backend wrapper with `mcp` SDK
 3. Map tools to CLI commands
-4. Maintain state on CLI side (MCP is stateless per command)
-5. Optional: Add daemon mode for persistent connection
+4. Maintain CLI state and a session-owned MCP connection
+5. Close transport contexts in the task that opened them

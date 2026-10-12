@@ -31,6 +31,32 @@ pytestmark = pytest.mark.skipif(
 TEST_URL = "https://example.com"
 
 
+def test_persistent_session_reuses_one_proxy(monkeypatch):
+    """Verify ten real browser requests use one proxy and one captured lane."""
+    from cli_anything.browser.core.session import Session
+    from cli_anything.browser.utils import domshell_backend as backend
+
+    stdio_client = backend.stdio_client
+    starts = []
+
+    def count_start(params):
+        starts.append(params)
+        return stdio_client(params)
+
+    monkeypatch.setattr(backend, "stdio_client", count_start)
+    with Session() as session:
+        assert "error" not in backend.open_url(TEST_URL, session=session)
+        lane = session.domshell_lane_id
+        assert lane is not None
+        for _ in range(9):
+            assert "error" not in backend.ls("", session=session)
+            assert session.domshell_lane_id == lane
+        connection = session._connection
+    assert len(starts) == 1
+    assert connection.closed
+    assert not connection._thread.is_alive()
+
+
 @pytest.fixture
 def runner():
     return CliRunner()
