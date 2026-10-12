@@ -96,25 +96,28 @@ cli-anything-browser act click /main/button[0]
 cli-anything-browser --json fs ls /
 ```
 
-### Daemon Mode (Faster Interactive Use)
+### Persistent REPL Sessions
 
-```bash
-# Start persistent connection
-cli-anything-browser session daemon-start
-
-# Run commands (uses persistent connection)
-cli-anything-browser fs ls /
-cli-anything-browser fs cd /main
-
-# Stop daemon when done
-cli-anything-browser session daemon-stop
-```
-
-### Interactive REPL
+Start the REPL, then enter the following commands in that same process:
 
 ```bash
 cli-anything-browser
 ```
+
+```text
+page open https://example.com
+fs cd /main
+fs ls
+quit
+```
+
+Ordinary REPL commands reuse one MCP connection and captured browser lane.
+The connection starts on the first browser operation and closes when the REPL
+exits. Separate CLI invocations start separate sessions. Python callers should
+use `with Session() as session:` or call `session.close()` to release resources.
+A failed transport request is never replayed automatically; inspect the browser
+state before retrying an action. The next request can reconnect to the saved
+lane. Run multi-command workflows sequentially.
 
 ## Path Syntax
 

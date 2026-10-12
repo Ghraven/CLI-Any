@@ -13,7 +13,7 @@ def read_readme():
 
 setup(
     name="cli-anything-browser",
-    version="1.0.0",
+    version="1.1.0",
 
     author="CLI Anything Contributors",
     description="CLI harness for browser automation via DOMShell MCP server",

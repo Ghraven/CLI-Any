@@ -7,8 +7,12 @@ Maintains page state across CLI commands:
 - Daemon mode status
 """
 
-from typing import Optional
+import threading
+from typing import TYPE_CHECKING, Callable, Optional
 from dataclasses import dataclass, field
+
+if TYPE_CHECKING:
+    from cli_anything.browser.utils.mcp_connection import PersistentConnection
 
 
 @dataclass
@@ -26,6 +30,9 @@ class Session:
       arrives carrying a ``[lane: <id>]`` marker; thereafter passed as
       ``group_id`` on every subsequent call so browser state (current tab,
       cwd, focus) persists across REPL commands in non-daemon mode.
+
+    In non-daemon mode the first backend call opens a connection retained
+    until ``close()``. Use ``with Session() as session:`` in Python callers.
     """
 
     current_url: str = ""
@@ -34,6 +41,39 @@ class Session:
     forward_stack: list[str] = field(default_factory=list)
     daemon_mode: bool = False
     domshell_lane_id: Optional[str] = None
+    _connection: Optional["PersistentConnection"] = field(
+        default=None, init=False, repr=False, compare=False,
+    )
+    _connection_lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False, compare=False,
+    )
+    _closed: bool = field(default=False, init=False, repr=False, compare=False)
+
+    def _get_connection(
+        self, factory: Callable[[], "PersistentConnection"],
+    ) -> "PersistentConnection":
+        with self._connection_lock:
+            if self._closed:
+                raise RuntimeError("Browser session is closed")
+            if self._connection is None or self._connection.closed:
+                self._connection = factory()
+            return self._connection
+
+    def close(self) -> None:
+        """Release this session's MCP connection without closing browser tabs."""
+        with self._connection_lock:
+            self._closed = True
+            connection = self._connection
+        if connection is not None:
+            connection.close()
+
+    def __enter__(self) -> "Session":
+        if self._closed:
+            raise RuntimeError("Browser session is closed")
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
 
     def set_url(self, url: str, record_history: bool = True) -> None:
         """Set the current URL and update history.

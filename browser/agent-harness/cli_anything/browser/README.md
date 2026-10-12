@@ -9,6 +9,7 @@ A command-line interface for browser automation using [DOMShell](https://github.
 - **Actions**: `click`, `type` to interact with elements
 - **JSON output**: `--json` flag for machine-readable output
 - **Interactive REPL**: Stateful session with command history
+- **Session connections**: Reuse one MCP proxy process throughout ordinary REPL workflows
 - **Daemon mode**: Optional persistent connection for faster interactive use
 
 ## Installation
@@ -101,9 +102,36 @@ cli-anything-browser --json fs ls /
 }
 ```
 
-### Daemon Mode (Persistent Connection)
+### Session Connections
 
-For faster interactive use, start daemon mode within a REPL session:
+Ordinary REPL commands reuse one MCP connection, opened lazily on the first
+browser operation. Multi-step operations such as typing into an absolute
+path use that same connection for anchor, focus, type, and restore. Leaving
+the REPL or finishing a one-shot command closes its connection automatically.
+Separate CLI invocations still have separate sessions.
+
+Python callers should use a context manager, or call `session.close()`:
+
+```python
+from cli_anything.browser.core.session import Session
+from cli_anything.browser.core import fs, page
+
+with Session() as session:
+    page.open_page(session, "https://example.com")
+    fs.change_directory(session, "/main")
+    print(fs.list_elements(session))
+```
+
+Closing releases the proxy process and worker thread, without closing Chrome
+tabs. Initialization and individual MCP requests time out after 60 seconds.
+A transport failure is returned to the caller without replaying the command;
+the next command can reconnect using the saved lane ID. Inspect browser state
+before retrying a failed action. Concurrent requests on one connection are
+serialized, but multi-command workflows should be run sequentially.
+
+### Daemon Mode
+
+The existing process-wide daemon mode is also available within a REPL session:
 
 ```bash
 # Start REPL with daemon mode
