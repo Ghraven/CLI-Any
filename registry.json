@@ -6,6 +6,25 @@
   },
   "clis": [
     {
+      "name": "clockify",
+      "display_name": "Clockify",
+      "version": "0.1.0",
+      "description": "Time tracking, timer lifecycle, projects, clients, tasks, tags, user groups, and summary/detailed reports through the Clockify REST APIs",
+      "requires": "Clockify account with API access; CLOCKIFY_API_KEY",
+      "homepage": "https://clockify.me/",
+      "source_url": null,
+      "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=clockify/agent-harness",
+      "entry_point": "cli-anything-clockify",
+      "skill_md": "skills/cli-anything-clockify/SKILL.md",
+      "category": "project-management",
+      "contributors": [
+        {
+          "name": "hiSandog",
+          "url": "https://github.com/hiSandog"
+        }
+      ]
+    },
+    {
       "name": "jumpserver",
       "display_name": "JumpServer",
       "version": "0.1.0",

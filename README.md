@@ -1147,6 +1147,13 @@ Each application received complete, production-ready CLI interfaces — not demo
 <td align="center">✅ <a href="mailchimp/agent-harness/">303 cmds</a></td>
 </tr>
 <tr>
+<td align="center"><strong><a href="clockify/agent-harness/">Clockify</a></strong></td>
+<td>Time Tracking &amp; Project Management</td>
+<td><code>cli-anything-clockify</code></td>
+<td>Clockify REST + Reports APIs</td>
+<td align="center"><a href="clockify/agent-harness/cli_anything/clockify/README.md">Commands &amp; setup</a></td>
+</tr>
+<tr>
 <td align="center"><strong>📚 <a href="zotero/agent-harness/">Zotero</a></strong></td>
 <td>Reference Management</td>
 <td><code>cli-anything-zotero</code></td>
