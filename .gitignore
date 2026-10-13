@@ -99,6 +99,7 @@
 !/sbox/
 !/quietshrink/
 !/mailchimp/
+!/clockify/
 !/3MF/
 !/calibre/
 !/rekordbox/
@@ -210,6 +211,8 @@
 /quietshrink/.*
 /mailchimp/*
 /mailchimp/.*
+/clockify/*
+/clockify/.*
 /calibre/*
 /calibre/.*
 /rekordbox/*
@@ -288,6 +291,7 @@
 !/sbox/agent-harness/
 !/quietshrink/agent-harness/
 !/mailchimp/agent-harness/
+!/clockify/agent-harness/
 !/live2d/agent-harness/
 !/rekordbox/agent-harness/
 !/eez-studio/agent-harness/
