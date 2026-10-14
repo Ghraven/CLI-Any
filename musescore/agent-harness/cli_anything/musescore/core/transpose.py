@@ -106,21 +106,12 @@ def transpose_by_key(input_path: str, output_path: str, *,
     }
 
 
-def transpose_by_interval(input_path: str, output_path: str, *,
-                          semitones: int | None = None,
-                          interval_index: int | None = None,
-                          direction: str = "up",
-                          transpose_key_signatures: bool = True,
-                          transpose_chord_names: bool = True,
-                          use_double_sharps_flats: bool = False) -> dict:
-    """Transpose a score by a chromatic interval.
+def resolve_interval(semitones: int | None, interval_index: int | None,
+                     direction: str = "up") -> tuple[int, str]:
+    """Validate interval arguments; return (interval enum index, direction).
 
-    Specify either semitones or interval_index (not both).
-
-    Args:
-        semitones: Number of semitones to transpose.
-        interval_index: Direct mscore interval enum index (0-25).
-        direction: "up" or "down".
+    Raises ValueError for invalid input, so callers can reject a request
+    before mutating any session state.
     """
     if semitones is not None and interval_index is not None:
         raise ValueError("Specify either semitones or interval_index, not both.")
@@ -138,6 +129,26 @@ def transpose_by_interval(input_path: str, output_path: str, *,
                 f"interval_index must be between 0 and {len(INTERVAL_ENUM) - 1}, got {interval_index}."
             )
         idx = interval_index
+    return idx, direction
+
+
+def transpose_by_interval(input_path: str, output_path: str, *,
+                          semitones: int | None = None,
+                          interval_index: int | None = None,
+                          direction: str = "up",
+                          transpose_key_signatures: bool = True,
+                          transpose_chord_names: bool = True,
+                          use_double_sharps_flats: bool = False) -> dict:
+    """Transpose a score by a chromatic interval.
+
+    Specify either semitones or interval_index (not both).
+
+    Args:
+        semitones: Number of semitones to transpose.
+        interval_index: Direct mscore interval enum index (0-25).
+        direction: "up" or "down".
+    """
+    idx, direction = resolve_interval(semitones, interval_index, direction)
 
     opts = {
         "mode": "by_interval",
