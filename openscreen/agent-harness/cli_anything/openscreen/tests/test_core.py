@@ -763,3 +763,48 @@ class TestIntegration:
         assert s.editor["padding"] == 30
         s.undo()
         assert s.editor["padding"] == 10
+
+
+# ── Failed operations must not touch undo/redo/dirty state ───────────────
+
+class TestFailedOpsLeaveHistoryUntouched:
+    @staticmethod
+    def _state(s):
+        return (len(s._undo_stack), len(s._redo_stack), s._modified)
+
+    @pytest.mark.parametrize("remove", [
+        tl_mod.remove_zoom_region,
+        tl_mod.remove_speed_region,
+        tl_mod.remove_trim_region,
+        tl_mod.remove_annotation,
+    ])
+    def test_failed_remove_keeps_history(self, remove):
+        s = Session()
+        s.new_project()
+        tl_mod.add_trim_region(s, 0, 100)
+        assert s.undo()          # leaves a redo entry available
+        before = self._state(s)
+        with pytest.raises(ValueError, match="not found"):
+            remove(s, "nope")
+        assert self._state(s) == before
+        assert s.redo()          # redo history was not wiped by the failed call
+
+    def test_failed_annotation_update_keeps_history(self):
+        s = Session()
+        s.new_project()
+        a = tl_mod.add_text_annotation(s, 1000, 3000, "Hi")
+        before = self._state(s)
+        with pytest.raises(ValueError):
+            tl_mod.update_annotation(s, a["id"], start_ms=5000)   # end <= start
+        with pytest.raises(ValueError):
+            tl_mod.update_annotation(s, a["id"], font_size="abc")
+        assert self._state(s) == before
+        assert tl_mod.list_annotations(s)[0]["startMs"] == 1000
+        assert tl_mod.list_annotations(s)[0]["style"]["fontSize"] == 32
+
+    def test_annotation_update_applies(self):
+        s = Session()
+        s.new_project()
+        a = tl_mod.add_text_annotation(s, 1000, 3000, "Hi")
+        r = tl_mod.update_annotation(s, a["id"], end_ms=4000, text_content="Yo", font_size="40")
+        assert (r["endMs"], r["content"], r["style"]["fontSize"]) == (4000, "Yo", 40)
