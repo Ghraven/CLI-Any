@@ -133,7 +133,7 @@ def add_node(
         return {"status": "error", "message": f"Scene not found: {scene_path}"}
 
     for label, value in (("node name", node_name), ("node type", node_type)):
-        if not value or any(c in value for c in '"\n\r'):
+        if not value or any(c in value for c in '"\\\n\r'):
             return {"status": "error", "message": f"Invalid {label}: {value!r}"}
     if "/" in node_name:
         return {"status": "error", "message": f"Invalid node name (contains '/'): {node_name!r}"}
@@ -150,7 +150,7 @@ def add_node(
             paths.add(n.get("name", ""))
         else:
             paths.add(f"{n_parent}/{n.get('name', '')}")
-    if parent not in paths:
+    if parent not in paths and not _under_instanced_node(full_path, parent):
         return {"status": "error", "message": f"Parent node not found in scene: {parent}"}
     new_path = node_name if parent == "." else f"{parent}/{node_name}"
     if new_path in paths:
@@ -169,6 +169,32 @@ def add_node(
 
 
 # ---------- internal helpers ----------
+
+def _under_instanced_node(full_path: Path, parent: str) -> bool:
+    """True if parent may be a node inherited from an instanced/base scene.
+
+    Children supplied by an instanced PackedScene (or by the base of an
+    inherited scene whose root has instance=...) are not listed in the file,
+    so they cannot be validated against it.
+    """
+    import re
+    instanced = []
+    for m in re.finditer(r"^\[node\s+([^\]]*)\]", full_path.read_text(encoding="utf-8"), re.M):
+        attrs = m.group(1)
+        if not re.search(r"\binstance\s*=", attrs):
+            continue
+        name = re.search(r'name="([^"]*)"', attrs)
+        par = re.search(r'parent="([^"]*)"', attrs)
+        if not name:
+            continue
+        if not par:
+            instanced.append(".")
+        elif par.group(1) == ".":
+            instanced.append(name.group(1))
+        else:
+            instanced.append(f"{par.group(1)}/{name.group(1)}")
+    return any(i == "." or parent == i or parent.startswith(i + "/") for i in instanced)
+
 
 def _generate_uid() -> str:
     """Generate a UID for scene files using uuid4 for uniqueness."""
