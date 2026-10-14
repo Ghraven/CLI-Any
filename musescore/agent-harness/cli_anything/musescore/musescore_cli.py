@@ -228,6 +228,8 @@ def transpose_by_key(input_path, output_path, target_key, direction,
 def transpose_by_interval(input_path, output_path, semitones, interval_index,
                           direction, no_key_sig, no_chord_names):
     """Transpose by a chromatic interval."""
+    # Validate first so a rejected request does not touch undo/redo history.
+    trans_mod.resolve_interval(semitones, interval_index, direction)
     sess = get_session()
     if sess.has_project():
         sess.snapshot(f"Transpose by interval")

@@ -183,6 +183,36 @@ class TestTranspose:
     def test_interval_enum_count(self):
         assert len(INTERVAL_ENUM) == 26
 
+    def test_semitones_beyond_two_octaves_rejected(self):
+        # Previously 25 wrapped to 0 (a silent no-op) and 30 to 5.
+        assert semitones_to_interval_index(24) == 24
+        for bad in (25, 30, -25):
+            with pytest.raises(ValueError):
+                semitones_to_interval_index(bad)
+
+    def test_interval_index_out_of_range_rejected(self):
+        from cli_anything.musescore.core.transpose import transpose_by_interval
+        for bad in (-1, 26, 99):
+            with pytest.raises(ValueError):
+                transpose_by_interval("in.mscz", "out.mscz", interval_index=bad)
+
+
+    def test_rejected_interval_does_not_snapshot(self, monkeypatch):
+        from click.testing import CliRunner
+        from cli_anything.musescore import musescore_cli
+
+        sess = Session()
+        sess.set_project({"name": "t"}, "in.mscz")
+        sess.redo_stack.append({"description": "redo me", "data": {}, "path": None})
+        monkeypatch.setattr(musescore_cli, "get_session", lambda: sess)
+        result = CliRunner().invoke(musescore_cli.cli, [
+            "transpose", "by-interval", "-i", "in.mscz", "-o", "out.mscz", "--semitones", "25",
+        ])
+        assert result.exit_code != 0
+        assert sess.undo_stack == [] and sess.history == []
+        assert len(sess.redo_stack) == 1
+        assert not sess.modified
+
 
 # ── XML Parsing Tests ─────────────────────────────────────────────────
 
