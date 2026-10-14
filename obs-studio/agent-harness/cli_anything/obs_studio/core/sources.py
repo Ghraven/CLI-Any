@@ -159,6 +159,16 @@ def duplicate_source(project: Dict[str, Any], source_index: int, scene_index: in
     return dup
 
 
+def _rotation_float(value: Any) -> float:
+    """Validate a rotation value and convert it to float, rejecting ints beyond float range."""
+    num = _finite_number(value, "Rotation")
+    try:
+        result = float(num)
+    except OverflowError as exc:
+        raise ValueError(f"Rotation must be a finite number, got {value!r}") from exc
+    return result
+
+
 def set_source_property(
     project: Dict[str, Any],
     source_index: int,
@@ -185,7 +195,7 @@ def set_source_property(
     elif prop == "opacity":
         source["opacity"] = validate_range(value, 0.0, 1.0, "Opacity")
     elif prop == "rotation":
-        source["rotation"] = float(_finite_number(value, "Rotation"))
+        source["rotation"] = _rotation_float(value)
     elif prop == "name":
         source["name"] = str(value)
 
@@ -231,8 +241,7 @@ def transform_source(
 
     new_rot = None
     if rotation is not None:
-        rot = _finite_number(rotation, "Rotation")
-        new_rot = float(rot)
+        new_rot = _rotation_float(rotation)
 
     if new_pos is not None:
         source["position"] = new_pos

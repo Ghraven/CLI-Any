@@ -25,6 +25,14 @@ def test_set_rotation_rejects_non_finite(proj, bad):
     json.dumps(proj, allow_nan=False)
 
 
+def test_set_rotation_rejects_oversized_integer_string(proj):
+    with pytest.raises(ValueError):
+        src_mod.set_source_property(proj, 0, "rotation", "9" * 400)
+    with pytest.raises(ValueError):
+        src_mod.transform_source(proj, 0, rotation=10**400)
+    assert proj["scenes"][0]["sources"][0]["rotation"] == 0
+
+
 def test_set_rotation_accepts_finite(proj):
     src = src_mod.set_source_property(proj, 0, "rotation", "45.5")
     assert src["rotation"] == 45.5
