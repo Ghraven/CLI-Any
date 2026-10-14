@@ -7,6 +7,26 @@ Tenant: default_tenant, Database: default_database
 
 import json
 import requests
+from requests.adapters import HTTPAdapter
+
+DEFAULT_TIMEOUT = 30  # seconds
+
+
+class _TimeoutAdapter(HTTPAdapter):
+    """HTTPAdapter that applies a default timeout to every request.
+
+    ``requests`` waits forever when no timeout is given, so an unresponsive
+    server would hang the CLI/REPL indefinitely.
+    """
+
+    def __init__(self, *args, timeout: float = DEFAULT_TIMEOUT, **kwargs):
+        self._default_timeout = timeout
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        if kwargs.get("timeout") is None:
+            kwargs["timeout"] = self._default_timeout
+        return super().send(request, **kwargs)
 
 
 class ChromaDBBackend:
@@ -14,12 +34,16 @@ class ChromaDBBackend:
 
     def __init__(self, base_url: str = "http://localhost:8000",
                  tenant: str = "default_tenant",
-                 database: str = "default_database"):
+                 database: str = "default_database",
+                 timeout: float = DEFAULT_TIMEOUT):
         self.base_url = base_url.rstrip("/")
         self.tenant = tenant
         self.database = database
         self._session = requests.Session()
         self._session.headers.update({"Content-Type": "application/json"})
+        adapter = _TimeoutAdapter(timeout=timeout)
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
 
     @property
     def _tenant_db_prefix(self) -> str:

@@ -307,6 +307,38 @@ class TestBackendErrorHandling:
             b.get_collection("nonexistent")
 
 
+class TestBackendTimeout:
+    """Every request must carry a timeout so an unresponsive server cannot hang the CLI."""
+
+    def _send_with(self, backend, **kwargs):
+        import requests
+        from requests.adapters import HTTPAdapter
+        seen = {}
+
+        def fake_send(self, request, **kw):
+            seen.update(kw)
+            resp = requests.Response()
+            resp.status_code = 200
+            resp._content = b"{}"
+            return resp
+
+        with patch.object(HTTPAdapter, "send", fake_send):
+            backend.heartbeat()
+        return seen
+
+    def test_default_timeout_applied(self):
+        seen = self._send_with(ChromaDBBackend())
+        assert seen["timeout"] == 30
+
+    def test_custom_timeout_applied(self):
+        seen = self._send_with(ChromaDBBackend(timeout=5))
+        assert seen["timeout"] == 5
+
+    def test_https_timeout_applied(self):
+        seen = self._send_with(ChromaDBBackend(base_url="https://chroma.example:8443", timeout=7))
+        assert seen["timeout"] == 7
+
+
 # ============================================================================
 # CLI argument parsing (Click CliRunner)
 # ============================================================================
