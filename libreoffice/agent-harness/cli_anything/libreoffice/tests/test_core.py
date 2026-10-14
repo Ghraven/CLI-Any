@@ -975,3 +975,194 @@ class TestBackend:
         assert "bugs.documentfoundation.org/show_bug.cgi?id=169711" in msg
         assert "open -W -n -a" in msg
         assert "soffice" in msg
+
+
+class TestODFWhitespace:
+    @pytest.mark.parametrize("doc_type,project", [
+        ("writer", {"content": [{"type": "paragraph", "text": "  A\tB\nC  "}]}),
+        ("writer", {"content": [{"type": "heading", "text": "  A\tB\nC  "}]}),
+        ("writer", {"content": [{"type": "list", "items": ["  A\tB\nC  "]}]}),
+        ("writer", {"content": [{"type": "table", "cols": 1, "data": [["  A\tB\nC  "]]}]}),
+        ("calc", {"sheets": [{"cells": {"A1": {"value": "  A\tB\nC  "}}}]}),
+        ("impress", {"slides": [{"title": "  A\tB\nC  "}]}),
+        ("impress", {"slides": [{"content": "  A\tB\nC  "}]}),
+        ("impress", {"slides": [{"elements": [{"type": "text_box", "text": "  A\tB\nC  "}]}]}),
+    ])
+    def test_odf_explicit_whitespace(self, doc_type, project):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import create_content_xml, ODF_NS
+
+        root = ET.fromstring(create_content_xml(doc_type, project))
+        spaces = root.findall(".//text:s", ODF_NS)
+        assert [s.get("{%s}c" % ODF_NS["text"]) for s in spaces] == ["2", "2"]
+        assert len(root.findall(".//text:tab", ODF_NS)) == 1
+        assert len(root.findall(".//text:line-break", ODF_NS)) == 1
+        assert spaces[0].tail == "A"
+        assert spaces[1].tail in (None, "")
+
+    def test_paragraph_span_tails_and_crlf(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import create_content_xml, ODF_NS
+
+        project = {"content": [{"type": "paragraph", "text": "A\tB\r\nC D",
+                                "spans": [{"start": 0, "end": 1, "style": {"bold": True}},
+                                          {"start": 3, "end": 6, "style": {"italic": True}}]}]}
+        root = ET.fromstring(create_content_xml("writer", project))
+        para = root.find(".//text:p", ODF_NS)
+        spans = para.findall("text:span", ODF_NS)
+        assert spans[0].text == "A"
+        assert para[1].tag == "{%s}tab" % ODF_NS["text"]
+        assert para[1].tail == "B"
+        assert spans[1][0].tag == "{%s}line-break" % ODF_NS["text"]
+        assert spans[1][0].tail == "C"
+        assert len(root.findall(".//text:line-break", ODF_NS)) == 1
+        assert para[-1].tag == "{%s}s" % ODF_NS["text"]
+        assert para[-1].tail == "D"
+
+    @pytest.mark.parametrize("start,end", [(0, 2), (2, 4), (1, 2), (2, 3)])
+    def test_crlf_split_at_span_boundary_is_one_break(self, start, end):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import create_content_xml, ODF_NS
+
+        project = {"content": [{"type": "paragraph", "text": "A\r\nB",
+                                "spans": [{"start": start, "end": end, "style": {"bold": True}}]}]}
+        root = ET.fromstring(create_content_xml("writer", project))
+        assert len(root.findall(".//text:line-break", ODF_NS)) == 1
+
+    def test_spaces_beside_breaks_and_tabs_are_explicit(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import create_content_xml, ODF_NS
+
+        root = ET.fromstring(create_content_xml("writer", {
+            "content": [{"type": "paragraph", "text": "A \n B \t C"}]}))
+        assert len(root.findall(".//text:s", ODF_NS)) == 4
+
+    @pytest.mark.parametrize("doc_type", ["writer", "calc", "impress"])
+    def test_native_whitespace_roundtrip(self, tmp_path, doc_type):
+        from cli_anything.libreoffice.utils.odf_utils import write_odf
+        from cli_anything.libreoffice.core.importer import import_document
+
+        text = "  First\nSecond\tColumn  two  "
+        project = {"content": [{"type": "paragraph", "text": text,
+                               "spans": [{"start": 2, "end": 7, "style": {"bold": True}}]}],
+                   "sheets": [{"name": "Sheet1", "cells": {"A1": {"value": text}}}],
+                   "slides": [{"title": "Title", "content": text}]}
+        extension = {"writer": "odt", "calc": "ods", "impress": "odp"}[doc_type]
+        path = tmp_path / ("whitespace." + extension)
+        write_odf(str(path), doc_type, project)
+        loaded = import_document(str(path))
+        if doc_type == "writer":
+            actual = loaded["content"][0]["text"]
+        elif doc_type == "calc":
+            actual = loaded["sheets"][0]["cells"]["A1"]["value"]
+        else:
+            actual = loaded["slides"][0]["content"]
+        assert actual == text
+
+    def test_excessive_space_repeat_is_rejected(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.core.importer import _text_content
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        para = ET.fromstring('<text:p xmlns:text="%s">A<text:s text:c="18446744073709551616"/>B</text:p>'
+                             % ODF_NS["text"])
+        with pytest.raises(ValueError, match="space repeat count"):
+            _text_content(para)
+
+    @pytest.mark.parametrize("body", [
+        '<text:p><text:s text:c="600000"/>'
+        '<text:s text:c="600000"/></text:p>',
+        '<text:p><text:s text:c="600000"/>'
+        '<text:span><text:s text:c="600000"/></text:span></text:p>',
+        '<text:list-item><text:p><text:s text:c="600000"/></text:p>'
+        '<text:p><text:s text:c="600000"/></text:p></text:list-item>',
+    ])
+    def test_cumulative_space_repeats_are_rejected(self, body):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        root = ET.fromstring('<root xmlns:text="%s">%s</root>'
+                             % (ODF_NS["text"], body))
+        with pytest.raises(ValueError, match="space repeat count"):
+            importer_mod._text_content(root[0])
+
+    @pytest.mark.parametrize("doc_type", ["writer", "calc", "impress"])
+    def test_space_budget_covers_the_whole_document(self, tmp_path, doc_type):
+        from cli_anything.libreoffice.utils.odf_utils import write_odf
+
+        text = " " * 600_000
+        project = {
+            "content": [{"type": "paragraph", "text": text}] * 2,
+            "sheets": [{"cells": {"A1": {"value": text},
+                                    "A2": {"value": text}}}],
+            "slides": [{"title": text, "content": text}],
+        }
+        extension = {"writer": "odt", "calc": "ods", "impress": "odp"}[doc_type]
+        path = tmp_path / ("repeated." + extension)
+        write_odf(str(path), doc_type, project)
+        with pytest.raises(ValueError, match="space repeat count"):
+            importer_mod.import_document(str(path))
+
+    def test_cumulative_space_budget_accepts_the_boundary(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        para = ET.fromstring(
+            '<text:p xmlns:text="%s"><text:s text:c="500000"/>'
+            '<text:span><text:s text:c="500000"/></text:span></text:p>'
+            % ODF_NS["text"])
+        assert importer_mod._text_content(para) == " " * 1_000_000
+
+    @pytest.mark.parametrize("tag", ["p", "h"])
+    @pytest.mark.parametrize("body,expected", [
+        ('\n <text:span>A</text:span>\n', "A"),
+        (' A \t<text:span>\n B <text:span> C </text:span></text:span> D ',
+         "A B C D"),
+        (' \t\n<text:span> </text:span>\r ', ""),
+        ('\n <text:s text:c="2"/> A <text:tab/> B <text:line-break/>'
+         '<text:s text:c="2"/>\n ', "   A \t B \n  "),
+        ('\u00a0A\u00a0\u00a0B\u00a0', '\u00a0A\u00a0\u00a0B\u00a0'),
+    ])
+    def test_raw_xml_whitespace_is_normalized(self, tag, body, expected):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        para = ET.fromstring('<text:%s xmlns:text="%s">%s</text:%s>'
+                             % (tag, ODF_NS["text"], body, tag))
+        assert importer_mod._text_content(para) == expected
+
+    @pytest.mark.parametrize("container", ["text:list-item", "table:table-cell"])
+    @pytest.mark.parametrize("nested", [
+        '<text:note><text:note-body><text:p>N</text:p>'
+        '</text:note-body></text:note>',
+        '<draw:frame><draw:text-box><text:p>N</text:p>'
+        '</draw:text-box></draw:frame>',
+    ])
+    def test_nested_paragraphs_are_read_once(self, container, nested):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        namespaces = ' '.join('xmlns:%s="%s"' % (key, ODF_NS[key])
+                              for key in ("text", "table", "draw"))
+        elem = ET.fromstring(
+            '<%s %s><text:p>A%sB</text:p><text:p>C</text:p></%s>'
+            % (container, namespaces, nested, container))
+        assert importer_mod._text_content(elem) == "ANB\nC"
+
+    def test_nested_impress_paragraphs_are_read_once(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        namespaces = ' '.join('xmlns:%s="%s"' % (key, ODF_NS[key])
+                              for key in ("office", "text", "draw"))
+        root = ET.fromstring(
+            '<office:document-content %s><office:body><office:presentation>'
+            '<draw:page><draw:frame><draw:text-box><text:p>Title</text:p>'
+            '<text:p>A<draw:frame><draw:text-box><text:p>N</text:p>'
+            '</draw:text-box></draw:frame>B</text:p>'
+            '</draw:text-box></draw:frame></draw:page>'
+            '</office:presentation></office:body></office:document-content>'
+            % namespaces)
+        slide = importer_mod._parse_impress_content(root)[0]
+        assert slide["title"] == "Title"
+        assert slide["content"] == "ANB"

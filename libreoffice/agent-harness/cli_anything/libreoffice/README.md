@@ -202,3 +202,9 @@ python3 -m cli.libreoffice_cli document open proposal.docx -o proposal.json
 python3 -m cli.libreoffice_cli --project proposal.json writer add-paragraph -t "Appendix"
 python3 -m cli.libreoffice_cli --project proposal.json export render proposal-updated.docx -p docx --overwrite
 ```
+
+Text in ODF exports preserves tabs, line breaks, and repeated or edge spaces,
+including styled paragraph spans. Importing ODF decodes the corresponding
+whitespace elements. CRLF and CR line endings are normalized to line breaks.
+On import, raw XML whitespace is collapsed according to ODF paragraph rules.
+Documents exceeding 1,000,000 spaces expanded from `text:s` elements are rejected.
