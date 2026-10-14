@@ -68,8 +68,7 @@ def tags_update(id, tag, description, date):
         data["date"] = date
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_tag(id, data)
     output(result)

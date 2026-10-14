@@ -86,8 +86,7 @@ def piggy_banks_update(id, name, target_amount, start_date, end_date, notes, act
         data["active"] = active
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_piggy_bank(id, data)
     output(result)

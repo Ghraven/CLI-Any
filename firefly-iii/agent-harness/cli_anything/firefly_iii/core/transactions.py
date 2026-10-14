@@ -128,8 +128,7 @@ def transactions_update(id, description, amount, category, tags, notes):
         transaction_data["notes"] = notes
 
     if not transaction_data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     data = {
         "apply_rules": True,

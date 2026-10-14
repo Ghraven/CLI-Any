@@ -99,8 +99,7 @@ def webhooks_update(id, title, trigger, url, secret, active, events):
         data["events"] = list(events)
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_webhook(id, data)
     output(result)

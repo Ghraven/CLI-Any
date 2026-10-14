@@ -604,3 +604,34 @@ class TestCLIClick:
         skin = FakeReplSkin.instances[-1]
         assert any("No such option" in error for error in skin.errors)
         assert skin.goodbye_printed is True
+
+
+class TestUpdateWithoutFields:
+    """`update` commands with nothing to change must fail with a non-zero exit."""
+
+    @pytest.mark.parametrize("group,sub", [
+        ("accounts", "update"),
+        ("transactions", "update"),
+        ("budgets", "update"),
+        ("budgets", "limit-update"),
+        ("categories", "update"),
+        ("tags", "update"),
+        ("bills", "update"),
+        ("piggy_banks", "update"),
+        ("currencies", "update"),
+        ("recurrences", "update"),
+        ("rules", "update"),
+        ("rule_groups", "update"),
+        ("webhooks", "update"),
+    ])
+    def test_update_without_fields_exits_nonzero(self, group, sub):
+        import importlib
+        from cli_anything.firefly_iii import firefly_iii_cli
+
+        mod = importlib.import_module(f"cli_anything.firefly_iii.core.{group}")
+        cmd = getattr(mod, group)
+        backend = MagicMock()
+        with patch.object(firefly_iii_cli, "_backend", backend):
+            result = CliRunner().invoke(cmd, [sub, "--id", "1"])
+        assert result.exit_code != 0, result.output
+        assert backend.method_calls == []

@@ -120,8 +120,7 @@ def bills_update(id, name, amount_min, amount_max, currency_code, frequency,
         data["active"] = active
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_bill(id, data)
     output(result)
