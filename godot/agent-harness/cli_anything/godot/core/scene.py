@@ -132,6 +132,30 @@ def add_node(
     if not full_path.exists():
         return {"status": "error", "message": f"Scene not found: {scene_path}"}
 
+    for label, value in (("node name", node_name), ("node type", node_type)):
+        if not value or any(c in value for c in '"\n\r'):
+            return {"status": "error", "message": f"Invalid {label}: {value!r}"}
+    if "/" in node_name:
+        return {"status": "error", "message": f"Invalid node name (contains '/'): {node_name!r}"}
+
+    # Godot rejects scenes whose nodes reference a missing parent or reuse a
+    # sibling name, so check against the nodes already in the file.
+    existing = read_scene(project_path, scene_path)["nodes"]
+    paths = set()
+    for n in existing:
+        n_parent = n.get("parent")
+        if n_parent is None:
+            paths.add(".")
+        elif n_parent == ".":
+            paths.add(n.get("name", ""))
+        else:
+            paths.add(f"{n_parent}/{n.get('name', '')}")
+    if parent not in paths:
+        return {"status": "error", "message": f"Parent node not found in scene: {parent}"}
+    new_path = node_name if parent == "." else f"{parent}/{node_name}"
+    if new_path in paths:
+        return {"status": "error", "message": f"Node already exists: {new_path}"}
+
     node_line = f'\n[node name="{node_name}" type="{node_type}" parent="{parent}"]\n'
     with open(full_path, "a", encoding="utf-8") as f:
         f.write(node_line)

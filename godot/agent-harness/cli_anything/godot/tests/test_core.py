@@ -193,6 +193,36 @@ class TestSceneAddNode:
         assert 'name="Camera"' in content
         assert 'type="Camera2D"' in content
 
+    def _add(self, runner, project, name, parent=".", type_="Node2D"):
+        result = runner.invoke(cli, [
+            "--json", "-p", str(project),
+            "scene", "add-node", "scenes/Level1.tscn",
+            "--name", name, "--type", type_, "--parent", parent,
+        ])
+        return json.loads(result.output)
+
+    def test_add_node_missing_parent_rejected(self, runner, tmp_project):
+        before = (tmp_project / "scenes" / "Level1.tscn").read_text()
+        data = self._add(runner, tmp_project, "Gun", parent="Nope")
+        assert data["status"] == "error"
+        assert (tmp_project / "scenes" / "Level1.tscn").read_text() == before
+
+    def test_add_node_duplicate_sibling_rejected(self, runner, tmp_project):
+        data = self._add(runner, tmp_project, "Player")
+        assert data["status"] == "error"
+        assert "already exists" in data["message"]
+
+    def test_add_node_nested_parent(self, runner, tmp_project):
+        assert self._add(runner, tmp_project, "Gun", parent="Player")["status"] == "ok"
+        assert self._add(runner, tmp_project, "Muzzle", parent="Player/Gun")["status"] == "ok"
+        # Same name under a different parent is fine; same parent is not.
+        assert self._add(runner, tmp_project, "Gun", parent=".")["status"] == "ok"
+        assert self._add(runner, tmp_project, "Gun", parent="Player")["status"] == "error"
+
+    def test_add_node_rejects_quote_in_name(self, runner, tmp_project):
+        data = self._add(runner, tmp_project, 'Bad"Name')
+        assert data["status"] == "error"
+
 
 # ── Export tests ───────────────────────────────────────────────────────
 
