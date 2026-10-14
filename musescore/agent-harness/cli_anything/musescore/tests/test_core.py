@@ -183,6 +183,19 @@ class TestTranspose:
     def test_interval_enum_count(self):
         assert len(INTERVAL_ENUM) == 26
 
+    def test_semitones_beyond_two_octaves_rejected(self):
+        # Previously 25 wrapped to 0 (a silent no-op) and 30 to 5.
+        assert semitones_to_interval_index(24) == 24
+        for bad in (25, 30, -25):
+            with pytest.raises(ValueError):
+                semitones_to_interval_index(bad)
+
+    def test_interval_index_out_of_range_rejected(self):
+        from cli_anything.musescore.core.transpose import transpose_by_interval
+        for bad in (-1, 26, 99):
+            with pytest.raises(ValueError):
+                transpose_by_interval("in.mscz", "out.mscz", interval_index=bad)
+
 
 # ── XML Parsing Tests ─────────────────────────────────────────────────
 

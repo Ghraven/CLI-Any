@@ -54,10 +54,13 @@ def semitones_to_interval_index(semitones: int) -> int:
     Returns:
         Index into the MuseScore interval enum.
     """
-    abs_semi = abs(semitones) % 25
-    if abs_semi in _SEMITONES_TO_INTERVAL:
-        return _SEMITONES_TO_INTERVAL[abs_semi]
-    raise ValueError(f"No interval mapping for {semitones} semitones")
+    abs_semi = abs(semitones)
+    # Do not wrap with modulo: 25 semitones must not silently become a unison.
+    if abs_semi > 24:
+        raise ValueError(
+            f"Cannot transpose by {semitones} semitones; the maximum is 24 (two octaves)."
+        )
+    return _SEMITONES_TO_INTERVAL[abs_semi]
 
 
 def transpose_by_key(input_path: str, output_path: str, *,
@@ -130,6 +133,10 @@ def transpose_by_interval(input_path: str, output_path: str, *,
             semitones = abs(semitones)
         idx = semitones_to_interval_index(semitones)
     else:
+        if not 0 <= interval_index < len(INTERVAL_ENUM):
+            raise ValueError(
+                f"interval_index must be between 0 and {len(INTERVAL_ENUM) - 1}, got {interval_index}."
+            )
         idx = interval_index
 
     opts = {
