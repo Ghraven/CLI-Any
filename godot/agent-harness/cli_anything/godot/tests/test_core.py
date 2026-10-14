@@ -193,6 +193,56 @@ class TestSceneAddNode:
         assert 'name="Camera"' in content
         assert 'type="Camera2D"' in content
 
+    def _add(self, runner, project, name, parent=".", type_="Node2D"):
+        result = runner.invoke(cli, [
+            "--json", "-p", str(project),
+            "scene", "add-node", "scenes/Level1.tscn",
+            "--name", name, "--type", type_, "--parent", parent,
+        ])
+        return json.loads(result.output)
+
+    def test_add_node_missing_parent_rejected(self, runner, tmp_project):
+        before = (tmp_project / "scenes" / "Level1.tscn").read_text()
+        data = self._add(runner, tmp_project, "Gun", parent="Nope")
+        assert data["status"] == "error"
+        assert (tmp_project / "scenes" / "Level1.tscn").read_text() == before
+
+    def test_add_node_duplicate_sibling_rejected(self, runner, tmp_project):
+        data = self._add(runner, tmp_project, "Player")
+        assert data["status"] == "error"
+        assert "already exists" in data["message"]
+
+    def test_add_node_nested_parent(self, runner, tmp_project):
+        assert self._add(runner, tmp_project, "Gun", parent="Player")["status"] == "ok"
+        assert self._add(runner, tmp_project, "Muzzle", parent="Player/Gun")["status"] == "ok"
+        # Same name under a different parent is fine; same parent is not.
+        assert self._add(runner, tmp_project, "Gun", parent=".")["status"] == "ok"
+        assert self._add(runner, tmp_project, "Gun", parent="Player")["status"] == "error"
+
+    def test_add_node_rejects_quote_in_name(self, runner, tmp_project):
+        data = self._add(runner, tmp_project, 'Bad"Name')
+        assert data["status"] == "error"
+
+    @pytest.mark.parametrize("bad", ["Trail\\", "A\\nB"])
+    def test_add_node_rejects_backslash(self, runner, tmp_project, bad):
+        before = (tmp_project / "scenes" / "Level1.tscn").read_text()
+        assert self._add(runner, tmp_project, bad)["status"] == "error"
+        assert self._add(runner, tmp_project, "Ok", type_="Node\\")["status"] == "error"
+        assert (tmp_project / "scenes" / "Level1.tscn").read_text() == before
+
+    def test_add_node_allows_children_of_instanced_scene(self, runner, tmp_project):
+        scene = tmp_project / "scenes" / "Derived.tscn"
+        scene.write_text(
+            '[gd_scene load_steps=2 format=3]\n\n'
+            '[ext_resource type="PackedScene" path="res://scenes/Level1.tscn" id="1"]\n\n'
+            '[node name="Derived" instance=ExtResource("1")]\n'
+        )
+        result = runner.invoke(cli, [
+            "--json", "-p", str(tmp_project), "scene", "add-node", "scenes/Derived.tscn",
+            "--name", "Gun", "--type", "Node2D", "--parent", "Player",
+        ])
+        assert json.loads(result.output)["status"] == "ok"
+
 
 # ── Export tests ───────────────────────────────────────────────────────
 
