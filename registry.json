@@ -723,7 +723,7 @@
       "description": "Geospatial project authoring, layout export, and processing via PyQGIS and qgis_process",
       "requires": "QGIS with qgis_process on PATH, PyQGIS importable",
       "homepage": "https://qgis.org",
-      "source_url": null,
+      "source_url": "https://github.com/HKUDS/CLI-Anything/tree/main/QGIS/agent-harness",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=QGIS/agent-harness",
       "entry_point": "cli-anything-qgis",
       "skill_md": "skills/cli-anything-qgis/SKILL.md",
