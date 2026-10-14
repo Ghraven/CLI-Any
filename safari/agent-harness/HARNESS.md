@@ -11,7 +11,7 @@ This harness provides Safari browser automation on macOS by wrapping
 Node.js MCP server — in a Python Click CLI.
 
 It follows the MCP backend pattern documented in
-[`cli-anything-plugin/guides/mcp-backend.md`](../cli-anything-plugin/guides/mcp-backend.md).
+[`cli-anything-plugin/guides/mcp-backend.md`](../../cli-anything-plugin/guides/mcp-backend.md).
 
 ## Architecture Overview
 
@@ -351,7 +351,7 @@ applied to any software that exposes an MCP server. Steps:
 
 - [safari-mcp GitHub](https://github.com/achiya-automation/safari-mcp)
 - [safari-mcp on npm](https://www.npmjs.com/package/safari-mcp)
-- [CLI-Anything plugin HARNESS.md](../cli-anything-plugin/HARNESS.md)
-- [MCP Backend Pattern Guide](../cli-anything-plugin/guides/mcp-backend.md)
-- [Sibling: browser/agent-harness (DOMShell / Chrome)](../browser/agent-harness/)
+- [CLI-Anything plugin HARNESS.md](../../cli-anything-plugin/HARNESS.md)
+- [MCP Backend Pattern Guide](../../cli-anything-plugin/guides/mcp-backend.md)
+- [Sibling: browser/agent-harness (DOMShell / Chrome)](../../browser/agent-harness/)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
