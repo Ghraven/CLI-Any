@@ -82,13 +82,11 @@ def remove_zoom_region(session: Session, region_id: str) -> dict:
     """Remove a zoom region by ID."""
     if not session.is_open:
         raise RuntimeError("No project is open")
-    session.checkpoint()
     regions = session.editor.get("zoomRegions", [])
-    before = len(regions)
-    session.editor["zoomRegions"] = [r for r in regions if r["id"] != region_id]
-    removed = before - len(session.editor["zoomRegions"])
-    if removed == 0:
+    if not any(r["id"] == region_id for r in regions):
         raise ValueError(f"Zoom region not found: {region_id}")
+    session.checkpoint()
+    session.editor["zoomRegions"] = [r for r in regions if r["id"] != region_id]
     return {"status": "removed", "id": region_id}
 
 
@@ -130,12 +128,11 @@ def remove_speed_region(session: Session, region_id: str) -> dict:
     """Remove a speed region by ID."""
     if not session.is_open:
         raise RuntimeError("No project is open")
-    session.checkpoint()
     regions = session.editor.get("speedRegions", [])
-    before = len(regions)
-    session.editor["speedRegions"] = [r for r in regions if r["id"] != region_id]
-    if before - len(session.editor["speedRegions"]) == 0:
+    if not any(r["id"] == region_id for r in regions):
         raise ValueError(f"Speed region not found: {region_id}")
+    session.checkpoint()
+    session.editor["speedRegions"] = [r for r in regions if r["id"] != region_id]
     return {"status": "removed", "id": region_id}
 
 
@@ -169,12 +166,11 @@ def remove_trim_region(session: Session, region_id: str) -> dict:
     """Remove a trim region by ID."""
     if not session.is_open:
         raise RuntimeError("No project is open")
-    session.checkpoint()
     regions = session.editor.get("trimRegions", [])
-    before = len(regions)
-    session.editor["trimRegions"] = [r for r in regions if r["id"] != region_id]
-    if before - len(session.editor["trimRegions"]) == 0:
+    if not any(r["id"] == region_id for r in regions):
         raise ValueError(f"Trim region not found: {region_id}")
+    session.checkpoint()
+    session.editor["trimRegions"] = [r for r in regions if r["id"] != region_id]
     return {"status": "removed", "id": region_id}
 
 
@@ -258,12 +254,11 @@ def remove_annotation(session: Session, region_id: str) -> dict:
     """Remove an annotation by ID."""
     if not session.is_open:
         raise RuntimeError("No project is open")
-    session.checkpoint()
     regions = session.editor.get("annotationRegions", [])
-    before = len(regions)
-    session.editor["annotationRegions"] = [r for r in regions if r["id"] != region_id]
-    if before - len(session.editor["annotationRegions"]) == 0:
+    if not any(r["id"] == region_id for r in regions):
         raise ValueError(f"Annotation not found: {region_id}")
+    session.checkpoint()
+    session.editor["annotationRegions"] = [r for r in regions if r["id"] != region_id]
     return {"status": "removed", "id": region_id}
 
 
@@ -353,29 +348,48 @@ def update_annotation(session: Session, region_id: str, **kwargs) -> dict:
     if region is None:
         raise ValueError(f"Annotation not found: {region_id}")
 
+    # Validate and convert every supplied value before mutating anything, so a
+    # rejected update leaves the project, undo stack and dirty flag untouched.
+    new_start = int(kwargs["start_ms"]) if "start_ms" in kwargs else region["startMs"]
+    new_end = int(kwargs["end_ms"]) if "end_ms" in kwargs else region["endMs"]
+    _validate_time_range(new_start, new_end)
+    converted = {}
+    if "text_content" in kwargs:
+        converted["text_content"] = str(kwargs["text_content"])
+    if "position_x" in kwargs:
+        converted["position_x"] = float(kwargs["position_x"])
+    if "position_y" in kwargs:
+        converted["position_y"] = float(kwargs["position_y"])
+    if "color" in kwargs:
+        converted["color"] = str(kwargs["color"])
+    if "background_color" in kwargs:
+        converted["background_color"] = str(kwargs["background_color"])
+    if "font_size" in kwargs:
+        converted["font_size"] = int(kwargs["font_size"])
+    if "font_family" in kwargs:
+        converted["font_family"] = str(kwargs["font_family"])
+
     session.checkpoint()
 
-    if "start_ms" in kwargs:
-        region["startMs"] = int(kwargs["start_ms"])
-    if "end_ms" in kwargs:
-        region["endMs"] = int(kwargs["end_ms"])
-    if "text_content" in kwargs:
-        region["textContent"] = str(kwargs["text_content"])
-        region["content"] = str(kwargs["text_content"])
-    if "position_x" in kwargs:
-        region["position"]["x"] = float(kwargs["position_x"])
-    if "position_y" in kwargs:
-        region["position"]["y"] = float(kwargs["position_y"])
+    region["startMs"] = new_start
+    region["endMs"] = new_end
+    if "text_content" in converted:
+        region["textContent"] = converted["text_content"]
+        region["content"] = converted["text_content"]
+    if "position_x" in converted:
+        region["position"]["x"] = converted["position_x"]
+    if "position_y" in converted:
+        region["position"]["y"] = converted["position_y"]
     if "size" in kwargs:
         region["size"] = kwargs["size"]
-    if "color" in kwargs:
-        region["style"]["color"] = str(kwargs["color"])
-    if "background_color" in kwargs:
-        region["style"]["backgroundColor"] = str(kwargs["background_color"])
-    if "font_size" in kwargs:
-        region["style"]["fontSize"] = int(kwargs["font_size"])
-    if "font_family" in kwargs:
-        region["style"]["fontFamily"] = str(kwargs["font_family"])
+    if "color" in converted:
+        region["style"]["color"] = converted["color"]
+    if "background_color" in converted:
+        region["style"]["backgroundColor"] = converted["background_color"]
+    if "font_size" in converted:
+        region["style"]["fontSize"] = converted["font_size"]
+    if "font_family" in converted:
+        region["style"]["fontFamily"] = converted["font_family"]
 
     return region
 
