@@ -53,3 +53,49 @@ def test_share_payload():
     result = export_mod.share(session, mode="edit")
     assert result["mode"] == "edit"
     assert result["url"].startswith("https://mermaid.live/edit#")
+
+
+def test_open_project_rejects_invalid_files():
+    import pytest
+    with tempfile.TemporaryDirectory() as tmp:
+        bad_json = os.path.join(tmp, "bad.json")
+        with open(bad_json, "w", encoding="utf-8") as fh:
+            fh.write("{not json")
+        no_code = os.path.join(tmp, "nocode.json")
+        with open(no_code, "w", encoding="utf-8") as fh:
+            json.dump({"foo": 1}, fh)
+        for path in (bad_json, no_code):
+            session = Session()
+            with pytest.raises(ValueError):
+                session.open_project(path)
+            assert not session.is_open
+
+
+def test_render_http_error_is_runtime_error(monkeypatch):
+    import io
+    import urllib.error
+    import pytest
+
+    def boom(req, timeout=0):
+        raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {}, io.BytesIO(b""))
+
+    monkeypatch.setattr(mermaid_backend.urllib.request, "urlopen", boom)
+    with tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "out.svg")
+        with pytest.raises(RuntimeError, match="HTTP 400"):
+            mermaid_backend.render_to_file("pako:x", out, "svg")
+        assert not os.path.exists(out)
+
+
+def test_cli_reports_errors_without_traceback():
+    from click.testing import CliRunner
+    from cli_anything.mermaid.mermaid_cli import cli
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = os.path.join(tmp, "bad.json")
+        with open(bad, "w", encoding="utf-8") as fh:
+            fh.write("[]")
+        result = CliRunner().invoke(cli, ["project", "open", bad])
+        assert result.exit_code == 1
+        assert "Error: Invalid Mermaid project file" in result.output
+        assert not isinstance(result.exception, ValueError)
