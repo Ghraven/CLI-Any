@@ -98,8 +98,7 @@ def rules_update(id, title, trigger, value, action, action_value, rule_group_id,
         data["active"] = active
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_rule(id, data)
     output(result)

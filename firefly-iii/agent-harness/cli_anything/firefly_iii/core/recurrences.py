@@ -135,8 +135,7 @@ def recurrences_update(id, title, type, amount, currency_code, source_account,
         data["tags"] = [t.strip() for t in tags.split(",")]
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_recurrence(id, data)
     output(result)

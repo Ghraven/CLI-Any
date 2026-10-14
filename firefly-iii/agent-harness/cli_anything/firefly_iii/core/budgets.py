@@ -63,8 +63,7 @@ def budgets_update(id, name, notes):
         data["notes"] = notes
 
     if not data:
-        click.echo("Error: At least one update field is required", err=True)
-        return
+        raise click.UsageError("At least one update field is required")
 
     result = backend.update_budget(id, data)
     output(result)
@@ -131,8 +130,7 @@ def budgets_limit_update(id, amount):
         data["amount"] = amount
 
     if not data:
-        click.echo("Error: Amount is required", err=True)
-        return
+        raise click.UsageError("Amount is required")
 
     result = backend.update_budget_limit(id, data)
     output(result)
