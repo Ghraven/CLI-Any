@@ -423,12 +423,15 @@ class TestCSFFilterValidation:
             csf_filter("/nonexistent.las", "/out.las", scene="OCEAN")
 
     def test_valid_scenes_accepted(self):
-        """Valid scene names should not raise at the validation stage."""
-        from cli_anything.cloudcompare.utils.cc_backend import csf_filter, find_cloudcompare
+        """Valid scene names pass validation and are forwarded to CloudCompare.
+
+        run_cloudcompare is mocked so the test needs no CloudCompare install.
+        """
+        from unittest.mock import patch
+        from cli_anything.cloudcompare.utils import cc_backend
         for scene in ("SLOPE", "RELIEF", "FLAT"):
-            try:
-                # Will fail because /nonexistent.las doesn't exist, but NOT
-                # because of invalid scene — the ValueError is raised before CC runs.
-                csf_filter("/nonexistent.las", "/out.las", scene=scene)
-            except ValueError:
-                pytest.fail(f"scene={scene!r} incorrectly raised ValueError")
+            fake = {"returncode": 0, "stdout": "", "stderr": "", "command": "cc"}
+            with patch.object(cc_backend, "run_cloudcompare", return_value=fake) as run:
+                cc_backend.csf_filter("/nonexistent.las", "/nonexistent_out.las", scene=scene)
+            args = run.call_args[0][0]
+            assert args[args.index("-SCENES") + 1] == scene
