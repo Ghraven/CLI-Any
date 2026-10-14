@@ -48,15 +48,19 @@ def render_to_file(serialized: str, output_path: str, fmt: str) -> dict:
         ) from exc
     except (urllib.error.URLError, OSError) as exc:
         raise RuntimeError(f"Could not reach renderer {RENDER_BASE}: {exc}") from exc
-    parent = os.path.dirname(os.path.abspath(output_path))
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    with open(output_path, "wb") as fh:
-        fh.write(data)
+    try:
+        parent = os.path.dirname(os.path.abspath(output_path))
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(output_path, "wb") as fh:
+            fh.write(data)
+        file_size = os.path.getsize(output_path)
+    except OSError as exc:
+        raise RuntimeError(f"Could not write {output_path}: {exc}") from exc
     return {
         "output": os.path.abspath(output_path),
         "format": fmt,
         "method": "mermaid-renderer",
-        "file_size": os.path.getsize(output_path),
+        "file_size": file_size,
         "url": url,
     }

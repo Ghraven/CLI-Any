@@ -43,6 +43,9 @@ class _CleanErrorGroup(click.Group):
     def invoke(self, ctx):
         try:
             return super().invoke(ctx)
+        except (click.exceptions.Exit, click.exceptions.Abort):
+            # Click control flow (e.g. --help exits 0 via Exit, a RuntimeError subclass).
+            raise
         except (RuntimeError, ValueError, OSError) as exc:
             raise click.ClickException(str(exc)) from exc
 
@@ -66,7 +69,11 @@ def cli(ctx, json_mode: bool, project_path: str | None, dry_run: bool) -> None:
         if dry_run:
             return
         if project_path and _session and _session.is_open and _session.modified:
-            _session.save_project()
+            # Runs on context close, after the group's invoke() has returned.
+            try:
+                _session.save_project()
+            except (RuntimeError, ValueError, OSError) as exc:
+                raise click.ClickException(str(exc)) from exc
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(repl)

@@ -99,3 +99,50 @@ def test_cli_reports_errors_without_traceback():
         assert result.exit_code == 1
         assert "Error: Invalid Mermaid project file" in result.output
         assert not isinstance(result.exception, ValueError)
+
+
+def test_nested_help_exits_zero():
+    from click.testing import CliRunner
+    from cli_anything.mermaid.mermaid_cli import cli
+
+    for args in (["project", "--help"], ["diagram", "set", "--help"]):
+        result = CliRunner().invoke(cli, args)
+        assert result.exit_code == 0, result.output
+        assert "Error" not in result.output
+
+
+def test_autosave_failure_is_clean_error(monkeypatch):
+    from click.testing import CliRunner
+    from cli_anything.mermaid.core.session import Session
+    from cli_anything.mermaid.mermaid_cli import cli
+
+    def boom(self, *a, **k):
+        raise PermissionError("read-only")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "p.mermaid.json")
+        session = Session()
+        project_mod.new_project(session)
+        project_mod.save_project(session, path)
+        monkeypatch.setattr(Session, "save_project", boom)
+        result = CliRunner().invoke(cli, ["--project", path, "diagram", "set", "--text", "graph TD; A-->B"])
+        assert result.exit_code == 1
+        assert "Error: read-only" in result.output
+        assert not isinstance(result.exception, PermissionError)
+
+
+def test_render_write_failure_is_runtime_error(monkeypatch, tmp_path):
+    import io
+
+    class FakeResp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(mermaid_backend.urllib.request, "urlopen", lambda *a, **k: FakeResp(b"<svg/>"))
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    with pytest.raises(RuntimeError, match="Could not write"):
+        mermaid_backend.render_to_file("pako:x", str(blocker / "out.svg"), "svg")
