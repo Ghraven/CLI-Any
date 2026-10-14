@@ -22,7 +22,7 @@ def load_config() -> dict[str, Any]:
     cfg = dict(DEFAULTS)
     if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_FILE) as f:
+            with open(CONFIG_FILE, encoding="utf-8") as f:
                 cfg.update(json.load(f))
         except (json.JSONDecodeError, ValueError):
             pass  # Corrupted config — fall back to defaults + env vars
@@ -40,7 +40,7 @@ def save_config(cfg: dict[str, Any]) -> Path:
         os.chmod(str(CONFIG_DIR), 0o700)
     except OSError:
         pass
-    with open(CONFIG_FILE, "w") as f:
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
     try:
         os.chmod(str(CONFIG_FILE), 0o600)

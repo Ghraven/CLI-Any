@@ -298,7 +298,7 @@ def _load_json_arg(value: str) -> dict[str, Any]:
     if value.startswith("@"):
         filepath = Path(value[1:]).resolve()
         try:
-            with open(filepath) as f:
+            with open(filepath, encoding="utf-8") as f:
                 data = json.load(f)
         except FileNotFoundError:
             raise ValueError(f"File not found: {filepath}")
@@ -644,7 +644,7 @@ def workflow_export(ctx: click.Context, workflow_id: str, out_path: str | None) 
     out = Path(out_path)
     if out.exists():
         warn(f"File {out_path} already exists — overwriting")
-    out.write_text(json.dumps(export_data, indent=2, default=str))
+    out.write_text(json.dumps(export_data, indent=2, default=str), encoding="utf-8")
     success(f"Exported to {out_path}")
 
 
@@ -654,7 +654,7 @@ def workflow_export(ctx: click.Context, workflow_id: str, out_path: str | None) 
 @click.pass_context
 def workflow_import(ctx: click.Context, file_path: str, name: str | None) -> None:
     """Import a workflow from a JSON file."""
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
         error("Invalid workflow format: must be a JSON object, not array or string")
@@ -707,7 +707,7 @@ def workflow_backup_all(ctx: click.Context, out_dir: str, active_only: bool) -> 
             export_data = _strip_server_fields(full)
             name_safe = _safe_filename(full.get("name", wf_id))
             filename = f"{wf_id}_{name_safe}.json"
-            (out_path / filename).write_text(json.dumps(export_data, indent=2, default=str))
+            (out_path / filename).write_text(json.dumps(export_data, indent=2, default=str), encoding="utf-8")
             click.secho(f"    {wf_id}  {full.get('name', '?')}", fg="green")
             ok += 1
         except Exception as exc:
@@ -716,7 +716,7 @@ def workflow_backup_all(ctx: click.Context, out_dir: str, active_only: bool) -> 
 
     # Write manifest
     manifest = {"backup_date": time.strftime("%Y-%m-%dT%H:%M:%S"), "count": ok, "failed": fail, "workflows": [w.get("id") for w in wf_list]}
-    (out_path / "_manifest.json").write_text(json.dumps(manifest, indent=2))
+    (out_path / "_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     click.echo()
     success(f"Backed up {ok} workflows to {out_dir}/ ({fail} failed)")
@@ -743,7 +743,7 @@ def workflow_restore_all(ctx: click.Context, backup_dir: str, dry_run: bool) -> 
     ok, fail = 0, 0
     for f in json_files:
         try:
-            data = json.loads(f.read_text())
+            data = json.loads(f.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
                 raise ValueError("Not a valid workflow JSON object")
             name = data.get("name", f.stem)
@@ -1418,7 +1418,7 @@ def workflow_autofix(ctx: click.Context, source: str, apply: bool, save_path: st
         click.secho(f"             {f.description}", fg="bright_black")
 
     if save_path:
-        Path(save_path).write_text(json.dumps(fixed_wf, indent=2, default=str))
+        Path(save_path).write_text(json.dumps(fixed_wf, indent=2, default=str), encoding="utf-8")
         success(f"Fixed workflow saved to {save_path}")
     elif apply and wf_id:
         _auto_snapshot(wf_id, conn, "autofix")
@@ -1933,7 +1933,7 @@ def workflow_scaffold(ctx: click.Context, pattern: str, name: str | None, deploy
         success(f"Deployed '{wf['name']}' as workflow {result.get('id', '?')}")
         output(result, _json_flag(ctx))
     elif out_path:
-        Path(out_path).write_text(json.dumps(wf, indent=2, default=str))
+        Path(out_path).write_text(json.dumps(wf, indent=2, default=str), encoding="utf-8")
         success(f"Saved scaffold to {out_path}")
     else:
         click.secho(f"\n  Pattern: {pattern}", fg="cyan", bold=True)
