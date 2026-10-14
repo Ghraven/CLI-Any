@@ -723,12 +723,17 @@
       "description": "Geospatial project authoring, layout export, and processing via PyQGIS and qgis_process",
       "requires": "QGIS with qgis_process on PATH, PyQGIS importable",
       "homepage": "https://qgis.org",
+      "source_url": "https://github.com/HKUDS/CLI-Anything/tree/main/QGIS/agent-harness",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=QGIS/agent-harness",
       "entry_point": "cli-anything-qgis",
-      "skill_md": "QGIS/agent-harness/cli_anything/qgis/skills/SKILL.md",
+      "skill_md": "skills/cli-anything-qgis/SKILL.md",
       "category": "scientific",
-      "contributor": "scially",
-      "contributor_url": "https://github.com/scially"
+      "contributors": [
+        {
+          "name": "scially",
+          "url": "https://github.com/scially"
+        }
+      ]
     },
     {
       "name": "chromadb",
