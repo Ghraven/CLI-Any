@@ -1541,8 +1541,34 @@ cli-anything/
 ├── 🎬 openscreen/agent-harness/         # Openscreen CLI — screen recording editor (101 tests)
 ├── ☁️ cloudcompare/agent-harness/       # CloudCompare CLI (88 tests)
 ├── 🔍 exa/agent-harness/               # Exa CLI (40 tests)
-└── ⛅ cloudanalyzer/agent-harness/      # CloudAnalyzer CLI (14 tests)
-└── 🔩 3MF/agent-harness/               # 3MF Mesh Editor CLI (50+ tests)
+├── ⛅ cloudanalyzer/agent-harness/      # CloudAnalyzer CLI (14 tests)
+├── 🔩 3MF/agent-harness/                # 3MF Mesh Editor CLI (50+ tests)
+├── 🗺️ QGIS/agent-harness/              # QGIS CLI (PyQGIS / qgis_process)
+├── 🔀 cc-switch/agent-harness/          # CC Switch CLI (AI coding tool configuration)
+├── 🧮 chromadb/agent-harness/           # ChromaDB CLI (vector database)
+├── 💰 firefly-iii/agent-harness/        # Firefly III CLI (personal finance)
+├── 📐 freecad/agent-harness/            # FreeCAD CLI (258 commands)
+├── 🕵️ intelwatch/agent-harness/        # Intelwatch CLI (competitive intelligence / OSINT)
+├── 🖥️ iterm2/agent-harness/            # iTerm2 CLI
+├── 🛰️ jumpserver/agent-harness/        # JumpServer CLI (bastion host)
+├── 🖌️ krita/agent-harness/             # Krita CLI
+├── 🎭 live2d/agent-harness/             # Live2D Cubism CLI
+├── 🧰 macrocli/agent-harness/           # MacroCLI (GUI workflow macros)
+├── 💬 minimax/agent-harness/            # MiniMax CLI (chat and TTS)
+├── ⚙️ n8n/agent-harness/               # n8n CLI (workflow automation)
+├── 🤖 novita/agent-harness/             # Novita CLI (OpenAI-compatible models)
+├── 🗃️ obsidian/agent-harness/          # Obsidian CLI (Local REST API)
+├── 🔁 pm2/agent-harness/                # PM2 CLI (Node.js process management)
+├── 🤫 quietshrink/agent-harness/        # QuietShrink CLI (screen recording compression)
+├── 🎧 rekordbox/agent-harness/          # Rekordbox CLI (DJ library and deck control)
+├── 📡 rms/agent-harness/                # Teltonika RMS CLI
+├── 🧭 safari/agent-harness/             # Safari CLI (safari-mcp)
+├── 📋 seaclip/agent-harness/            # SeaClip CLI (kanban and agent pipeline)
+├── 📓 siyuan/agent-harness/             # SiYuan CLI
+├── 🃏 slay_the_spire_ii/agent-harness/  # Slay the Spire 2 CLI
+├── 🪣 tigris/agent-harness/             # Tigris CLI (object storage)
+├── 🧬 unimol_tools/agent-harness/       # Uni-Mol Tools CLI (molecular property prediction)
+└── 🧪 wiremock/agent-harness/           # WireMock CLI (HTTP mock server)
 ```
 
 Each `agent-harness/` contains an installable Python package under `cli_anything.<software>/` with Click CLI, core modules, utils (including `repl_skin.py` and backend wrapper), and comprehensive tests.
