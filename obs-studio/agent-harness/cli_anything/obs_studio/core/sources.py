@@ -185,7 +185,7 @@ def set_source_property(
     elif prop == "opacity":
         source["opacity"] = validate_range(value, 0.0, 1.0, "Opacity")
     elif prop == "rotation":
-        source["rotation"] = float(value)
+        source["rotation"] = float(_finite_number(value, "Rotation"))
     elif prop == "name":
         source["name"] = str(value)
 

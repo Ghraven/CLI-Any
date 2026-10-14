@@ -2,7 +2,13 @@
 
 import copy
 from typing import Dict, Any, List, Optional
-from cli_anything.obs_studio.utils.obs_utils import generate_id, unique_name, get_item, validate_range
+from cli_anything.obs_studio.utils.obs_utils import (
+    generate_id,
+    unique_name,
+    get_item,
+    validate_range,
+    _finite_int,
+)
 
 
 MONITOR_TYPES = ("none", "monitor_only", "monitor_and_output")
@@ -100,7 +106,7 @@ def set_sync_offset(project: Dict[str, Any], index: int, offset_ms: int) -> Dict
     """Set audio sync offset in milliseconds."""
     audio_sources = _get_audio_sources(project)
     source = get_item(audio_sources, index, "audio source")
-    source["sync_offset"] = int(offset_ms)
+    source["sync_offset"] = _finite_int(offset_ms, "Sync offset")
     return source
 
 
