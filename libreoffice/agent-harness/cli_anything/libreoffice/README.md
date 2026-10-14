@@ -90,6 +90,12 @@ writer set-text <index> <text>
 
 ### Calc (Spreadsheet)
 
+Cell references use ASCII column letters and positive row numbers. Lowercase
+letters and leading row zeros are normalized (`a01` becomes `A1`) so edits,
+lookups, and exports refer to the same cell. Existing project files are not
+automatically migrated; values previously stored under noncanonical keys must
+be re-entered under canonical addresses.
+
 ```bash
 calc add-sheet [--name N] [--position P]
 calc remove-sheet <index>

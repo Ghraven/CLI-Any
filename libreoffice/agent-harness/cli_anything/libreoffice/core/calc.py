@@ -25,7 +25,10 @@ def _get_sheet(project: Dict[str, Any], sheet: int) -> Dict[str, Any]:
 
 def _validate_cell_ref(ref: str) -> str:
     """Validate and normalize a cell reference like 'A1', 'B12'."""
-    ref = ref.upper().strip()
+    ref = ref.strip()
+    if not ref.isascii():
+        raise ValueError(f"Invalid cell reference: {ref}")
+    ref = ref.upper()
     col = ""
     row = ""
     for ch in ref:
@@ -42,7 +45,8 @@ def _validate_cell_ref(ref: str) -> str:
     row_num = int(row)
     if row_num < 1:
         raise ValueError(f"Row number must be >= 1, got {row_num}")
-    return col + row
+    # Exporters address rows canonically (A1, never A01).
+    return col + str(row_num)
 
 
 def add_sheet(
