@@ -37,7 +37,20 @@ def emit(data, message: str | None = None) -> None:
         click.echo(str(data))
 
 
-@click.group(invoke_without_command=True)
+class _CleanErrorGroup(click.Group):
+    """Report expected harness errors as clean CLI errors, not tracebacks."""
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        except (click.exceptions.Exit, click.exceptions.Abort):
+            # Click control flow (e.g. --help exits 0 via Exit, a RuntimeError subclass).
+            raise
+        except (RuntimeError, ValueError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+
+
+@click.group(cls=_CleanErrorGroup, invoke_without_command=True)
 @click.option("--json", "json_mode", is_flag=True, help="Emit machine-readable JSON")
 @click.option("--project", "project_path", default=None, help="Open a Mermaid project file")
 @click.option("--dry-run", "dry_run", is_flag=True, default=False,
@@ -56,7 +69,11 @@ def cli(ctx, json_mode: bool, project_path: str | None, dry_run: bool) -> None:
         if dry_run:
             return
         if project_path and _session and _session.is_open and _session.modified:
-            _session.save_project()
+            # Runs on context close, after the group's invoke() has returned.
+            try:
+                _session.save_project()
+            except (RuntimeError, ValueError, OSError) as exc:
+                raise click.ClickException(str(exc)) from exc
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(repl)

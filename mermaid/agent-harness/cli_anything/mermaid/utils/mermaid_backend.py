@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import urllib.error
 import urllib.request
 import zlib
 
@@ -37,17 +38,29 @@ def build_live_url(serialized: str, mode: str) -> str:
 def render_to_file(serialized: str, output_path: str, fmt: str) -> dict:
     url = build_render_url(serialized, fmt)
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=60) as response:
-        data = response.read()
-    parent = os.path.dirname(os.path.abspath(output_path))
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    with open(output_path, "wb") as fh:
-        fh.write(data)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as response:
+            data = response.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(
+            f"Renderer returned HTTP {exc.code} for {fmt} output "
+            "(check the diagram syntax)"
+        ) from exc
+    except (urllib.error.URLError, OSError) as exc:
+        raise RuntimeError(f"Could not reach renderer {RENDER_BASE}: {exc}") from exc
+    try:
+        parent = os.path.dirname(os.path.abspath(output_path))
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(output_path, "wb") as fh:
+            fh.write(data)
+        file_size = os.path.getsize(output_path)
+    except OSError as exc:
+        raise RuntimeError(f"Could not write {output_path}: {exc}") from exc
     return {
         "output": os.path.abspath(output_path),
         "format": fmt,
         "method": "mermaid-renderer",
-        "file_size": os.path.getsize(output_path),
+        "file_size": file_size,
         "url": url,
     }
