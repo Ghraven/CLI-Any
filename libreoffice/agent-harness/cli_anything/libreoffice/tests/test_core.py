@@ -1068,3 +1068,101 @@ class TestODFWhitespace:
                              % ODF_NS["text"])
         with pytest.raises(ValueError, match="space repeat count"):
             _text_content(para)
+
+    @pytest.mark.parametrize("body", [
+        '<text:p><text:s text:c="600000"/>'
+        '<text:s text:c="600000"/></text:p>',
+        '<text:p><text:s text:c="600000"/>'
+        '<text:span><text:s text:c="600000"/></text:span></text:p>',
+        '<text:list-item><text:p><text:s text:c="600000"/></text:p>'
+        '<text:p><text:s text:c="600000"/></text:p></text:list-item>',
+    ])
+    def test_cumulative_space_repeats_are_rejected(self, body):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        root = ET.fromstring('<root xmlns:text="%s">%s</root>'
+                             % (ODF_NS["text"], body))
+        with pytest.raises(ValueError, match="space repeat count"):
+            importer_mod._text_content(root[0])
+
+    @pytest.mark.parametrize("doc_type", ["writer", "calc", "impress"])
+    def test_space_budget_covers_the_whole_document(self, tmp_path, doc_type):
+        from cli_anything.libreoffice.utils.odf_utils import write_odf
+
+        text = " " * 600_000
+        project = {
+            "content": [{"type": "paragraph", "text": text}] * 2,
+            "sheets": [{"cells": {"A1": {"value": text},
+                                    "A2": {"value": text}}}],
+            "slides": [{"title": text, "content": text}],
+        }
+        extension = {"writer": "odt", "calc": "ods", "impress": "odp"}[doc_type]
+        path = tmp_path / ("repeated." + extension)
+        write_odf(str(path), doc_type, project)
+        with pytest.raises(ValueError, match="space repeat count"):
+            importer_mod.import_document(str(path))
+
+    def test_cumulative_space_budget_accepts_the_boundary(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        para = ET.fromstring(
+            '<text:p xmlns:text="%s"><text:s text:c="500000"/>'
+            '<text:span><text:s text:c="500000"/></text:span></text:p>'
+            % ODF_NS["text"])
+        assert importer_mod._text_content(para) == " " * 1_000_000
+
+    @pytest.mark.parametrize("tag", ["p", "h"])
+    @pytest.mark.parametrize("body,expected", [
+        ('\n <text:span>A</text:span>\n', "A"),
+        (' A \t<text:span>\n B <text:span> C </text:span></text:span> D ',
+         "A B C D"),
+        (' \t\n<text:span> </text:span>\r ', ""),
+        ('\n <text:s text:c="2"/> A <text:tab/> B <text:line-break/>'
+         '<text:s text:c="2"/>\n ', "   A \t B \n  "),
+        ('\u00a0A\u00a0\u00a0B\u00a0', '\u00a0A\u00a0\u00a0B\u00a0'),
+    ])
+    def test_raw_xml_whitespace_is_normalized(self, tag, body, expected):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        para = ET.fromstring('<text:%s xmlns:text="%s">%s</text:%s>'
+                             % (tag, ODF_NS["text"], body, tag))
+        assert importer_mod._text_content(para) == expected
+
+    @pytest.mark.parametrize("container", ["text:list-item", "table:table-cell"])
+    @pytest.mark.parametrize("nested", [
+        '<text:note><text:note-body><text:p>N</text:p>'
+        '</text:note-body></text:note>',
+        '<draw:frame><draw:text-box><text:p>N</text:p>'
+        '</draw:text-box></draw:frame>',
+    ])
+    def test_nested_paragraphs_are_read_once(self, container, nested):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        namespaces = ' '.join('xmlns:%s="%s"' % (key, ODF_NS[key])
+                              for key in ("text", "table", "draw"))
+        elem = ET.fromstring(
+            '<%s %s><text:p>A%sB</text:p><text:p>C</text:p></%s>'
+            % (container, namespaces, nested, container))
+        assert importer_mod._text_content(elem) == "ANB\nC"
+
+    def test_nested_impress_paragraphs_are_read_once(self):
+        import xml.etree.ElementTree as ET
+        from cli_anything.libreoffice.utils.odf_utils import ODF_NS
+
+        namespaces = ' '.join('xmlns:%s="%s"' % (key, ODF_NS[key])
+                              for key in ("office", "text", "draw"))
+        root = ET.fromstring(
+            '<office:document-content %s><office:body><office:presentation>'
+            '<draw:page><draw:frame><draw:text-box><text:p>Title</text:p>'
+            '<text:p>A<draw:frame><draw:text-box><text:p>N</text:p>'
+            '</draw:text-box></draw:frame>B</text:p>'
+            '</draw:text-box></draw:frame></draw:page>'
+            '</office:presentation></office:body></office:document-content>'
+            % namespaces)
+        slide = importer_mod._parse_impress_content(root)[0]
+        assert slide["title"] == "Title"
+        assert slide["content"] == "ANB"

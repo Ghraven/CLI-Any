@@ -172,6 +172,26 @@ E2E tests produce real ODF files (ODT/ODS/ODP) and validate ZIP structure, XML c
 
 ## Test Results
 
+### ODF import review regressions
+
+- Reject cumulative `text:s` expansion within paragraphs, nested spans, cells
+  and the complete Writer/Calc/Impress document before allocating spaces.
+- Accept exactly 1,000,000 expanded spaces.
+- Collapse raw XML whitespace across inline boundaries in paragraphs/headings,
+  retaining explicit ODF whitespace and Unicode non-breaking spaces.
+- Read nested note/text-box paragraphs once in list items, cells and slides.
+- Import pretty-printed XML and explicit whitespace mixed with raw text, then
+  verify normalized re-export through actual LibreOffice text conversion.
+  Raw paragraph-edge spaces follow ODF 1.3 section 6.1.2; LibreOfficeDev
+  26.8.0.0.alpha0 retains one trailing raw space when converting these source
+  fixtures directly, so source rendering is not assumed to match normalization.
+
+Verification on 2026-10-14: **224 passed** (147 core + 77 E2E), no skips, in
+164.16 seconds. The full suite used the installed CLI entry point
+(`CLI_ANYTHING_FORCE_INSTALLED=1`), Python 3.12.14 and LibreOfficeDev
+26.8.0.0.alpha0 on Linux. Root-skills validation, Python compilation and
+`git diff --check` also passed. Windows, macOS and GUI rendering were not tested.
+
 ```
 test_core.py: 99 passed in 0.15s
 test_full_e2e.py: 73 passed in 58.33s

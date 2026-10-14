@@ -1,12 +1,13 @@
 """Import existing Office/ODF files into the LibreOffice CLI project model."""
 
 import os
+import re
 import tempfile
 import zipfile
 import xml.etree.ElementTree as ET
 from defusedxml.ElementTree import fromstring as _defused_fromstring
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from cli_anything.libreoffice.core.document import create_document
 from cli_anything.libreoffice.utils.lo_backend import convert
@@ -42,6 +43,9 @@ OFFICE_EXTENSION_CONVERSIONS = {
 SUPPORTED_IMPORT_EXTENSIONS = tuple(
     sorted(set(ODF_EXTENSION_TYPES) | set(OFFICE_EXTENSION_CONVERSIONS))
 )
+
+# Bound compressed whitespace expansion across the entire imported document.
+_MAX_EXPANDED_SPACES = 1_000_000
 
 
 def can_import(path: str) -> bool:
@@ -129,6 +133,7 @@ def import_odf(
         root = _defused_fromstring(content_xml)
     except ET.ParseError as e:
         raise ValueError(f"Invalid ODF content.xml in: {path}") from e
+    _validate_space_expansion(root)
     if inferred_type == "writer":
         project["content"] = _parse_writer_content(root)
     elif inferred_type == "calc":
@@ -345,7 +350,7 @@ def _parse_impress_content(root: ET.Element) -> List[Dict[str, Any]]:
 
     slides = []
     for page in _children_by_local(presentation, "page"):
-        texts = [_text_content(elem) for elem in page.iter() if _local_name(elem.tag) in ("h", "p")]
+        texts = [_text_content(elem) for elem in _paragraph_elements(page)]
         texts = [text for text in texts if text]
         title = texts[0] if texts else (_attr(page, "draw", "name") or "")
         content = "\n".join(texts[1:]) if len(texts) > 1 else ""
@@ -373,32 +378,80 @@ def _children_by_local(elem: ET.Element, local_name: str) -> List[ET.Element]:
     return [child for child in list(elem) if _local_name(child.tag) == local_name]
 
 
+def _validate_space_expansion(elem: ET.Element) -> None:
+    """Reject aggregate space repeats before allocating their expanded text."""
+    total = 0
+    for space in elem.iter(_q("text", "s")):
+        total += max(1, _int_attr(space, "text", "c", 1))
+        if total > _MAX_EXPANDED_SPACES:
+            raise ValueError(
+                f"ODF cumulative space repeat count exceeds {_MAX_EXPANDED_SPACES}"
+            )
+
+
+def _paragraph_elements(elem: ET.Element) -> Iterator[ET.Element]:
+    """Yield outermost paragraphs; inline traversal already reads nested ones."""
+    if elem.tag in {_q("text", "p"), _q("text", "h")}:
+        yield elem
+    else:
+        for child in elem:
+            yield from _paragraph_elements(child)
+
+
 def _text_content(elem: ET.Element) -> str:
-    """Read ODF mixed text, including whitespace represented by empty elements."""
+    """Collapse raw XML whitespace while preserving explicit ODF whitespace."""
+    _validate_space_expansion(elem)
+
     def inline_text(node: ET.Element) -> str:
-        parts = [node.text or ""]
-        for child in node:
-            if child.tag == _q("text", "s"):
-                count = max(1, _int_attr(child, "text", "c", 1))
-                if count > 1_000_000:
-                    raise ValueError("ODF space repeat count exceeds 1000000")
-                parts.append(" " * count)
-            elif child.tag == _q("text", "tab"):
-                parts.append("\t")
-            elif child.tag == _q("text", "line-break"):
-                parts.append("\n")
-            else:
-                parts.append(inline_text(child))
-            parts.append(child.tail or "")
+        parts = []
+        pending_space = False
+
+        def append_explicit(value: str) -> None:
+            nonlocal pending_space
+            if not value:
+                return
+            if pending_space:
+                parts.append(" ")
+            parts.append(value)
+            pending_space = False
+
+        def append_raw(value: str) -> None:
+            nonlocal pending_space
+            # ODF 1.3 section 6.1.2: only XML whitespace collapses. Defer
+            # trailing raw spaces so paragraph edges can be discarded without
+            # stripping text:s, text:tab, text:line-break or non-breaking spaces.
+            value = re.sub(r"[ \t\r\n]+", " ", value)
+            if value.startswith(" ") and parts:
+                pending_space = True
+            literal = value.strip(" ")
+            if literal:
+                append_explicit(literal)
+            if value.endswith(" ") and parts:
+                pending_space = True
+
+        def visit(current: ET.Element) -> None:
+            append_raw(current.text or "")
+            for child in current:
+                if child.tag == _q("text", "s"):
+                    count = max(1, _int_attr(child, "text", "c", 1))
+                    append_explicit(" " * count)
+                elif child.tag == _q("text", "tab"):
+                    append_explicit("\t")
+                elif child.tag == _q("text", "line-break"):
+                    append_explicit("\n")
+                elif child.tag in {_q("text", "p"), _q("text", "h")}:
+                    append_explicit(inline_text(child))
+                else:
+                    visit(child)
+                append_raw(child.tail or "")
+
+        visit(node)
         return "".join(parts)
 
-    if elem.tag in {_q("text", "p"), _q("text", "h")}:
-        return inline_text(elem)
-    paragraphs = [child for child in elem.iter()
-                  if child.tag in {_q("text", "p"), _q("text", "h")}]
+    paragraphs = list(_paragraph_elements(elem))
     if paragraphs:
         return "\n".join(inline_text(child) for child in paragraphs)
-    return inline_text(elem).strip()
+    return inline_text(elem)
 
 
 def _q(prefix: str, local: str) -> str:

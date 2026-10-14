@@ -1105,3 +1105,41 @@ def test_writer_whitespace_survives_real_conversion(tmp_path, spans):
     convert(str(source), "txt", output_dir=str(tmp_path))
     result = (tmp_path / "whitespace.txt").read_text(encoding="utf-8-sig")
     assert result == text.replace("\r\n", "\n") + "\n"
+
+
+@pytest.mark.parametrize("body,expected", [
+    ('\n <text:span>A \t<text:span> B </text:span></text:span>\n', "A B"),
+    ('\n <text:s text:c="2"/>A<text:tab/>B<text:line-break/>'
+     'C<text:s text:c="2"/>\n ', "  A\tB\nC  "),
+])
+def test_imported_xml_whitespace_survives_real_roundtrip(tmp_path, body, expected):
+    """Normalize raw XML on import, then preserve the result through LibreOffice."""
+    from cli_anything.libreoffice.utils.odf_utils import write_odf, ODF_NS
+    from cli_anything.libreoffice.utils.lo_backend import convert
+
+    generated = tmp_path / "generated.odt"
+    source = tmp_path / "formatted.odt"
+    write_odf(str(generated), "writer", create_document(doc_type="writer"))
+    with zipfile.ZipFile(generated) as zin, zipfile.ZipFile(source, "w") as zout:
+        for info in zin.infolist():
+            data = zin.read(info.filename)
+            if info.filename == "content.xml":
+                root = ET.fromstring(data)
+                text_root = root.find("office:body/office:text", ODF_NS)
+                text_root.append(ET.fromstring(
+                    '<text:p xmlns:text="%s">%s</text:p>' % (ODF_NS["text"], body)))
+                data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+            zout.writestr(info, data)
+
+    imported = importer_mod.import_document(str(source))
+    assert imported["content"][0]["text"] == expected
+
+    # ODF 1.3 section 6.1.2 removes raw paragraph-edge whitespace before
+    # interpreting explicit whitespace elements. Some LibreOffice versions
+    # retain a raw trailing space, so verify the normalized round trip rather
+    # than assuming their treatment of the noncanonical source is identical.
+    roundtrip = tmp_path / "roundtrip.odt"
+    write_odf(str(roundtrip), "writer", imported)
+    convert(str(roundtrip), "txt", output_dir=str(tmp_path))
+    rendered = (tmp_path / "roundtrip.txt").read_text(encoding="utf-8-sig")
+    assert rendered == expected + "\n"
