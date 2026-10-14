@@ -148,9 +148,9 @@ pip install -e .
 
 ## Documentation
 
-- **SOP**: [UNIMOL_TOOLS.md](../UNIMOL_TOOLS.md)
-- **Quick Start**: [docs/guides/02-QUICK-START.md](../docs/guides/02-QUICK-START.md)
-- **Full Documentation**: [docs/README.md](../docs/README.md)
+- **SOP**: [UNIMOL_TOOLS.md](https://github.com/HKUDS/CLI-Anything/blob/main/unimol_tools/agent-harness/UNIMOL_TOOLS.md)
+- **Quick Start**: [docs/guides/02-QUICK-START.md](https://github.com/HKUDS/CLI-Anything/blob/main/unimol_tools/agent-harness/docs/guides/02-QUICK-START.md)
+- **Full Documentation**: [docs/README.md](https://github.com/HKUDS/CLI-Anything/blob/main/unimol_tools/agent-harness/docs/README.md)
 
 ## Testing
 

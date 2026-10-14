@@ -9,7 +9,7 @@ Target: **Safari on macOS** via safari-mcp's Node.js MCP server.
 
 This document covers the Phase 1 codebase analysis, command map, and
 rendering-gap assessment required by the CLI-Anything methodology
-(see [`../cli-anything-plugin/HARNESS.md`](../cli-anything-plugin/HARNESS.md)).
+(see [`../cli-anything-plugin/HARNESS.md`](../../cli-anything-plugin/HARNESS.md)).
 
 ---
 
@@ -152,7 +152,7 @@ format for us to translate.
 **Status: N/A.**
 
 No effect/filter system in browser automation. The
-[`filter-translation.md`](../cli-anything-plugin/guides/filter-translation.md)
+[`filter-translation.md`](../../cli-anything-plugin/guides/filter-translation.md)
 guide does not apply.
 
 ## 5. Timecode Precision
@@ -160,7 +160,7 @@ guide does not apply.
 **Status: N/A.**
 
 No video/audio in browser automation. The
-[`timecode-precision.md`](../cli-anything-plugin/guides/timecode-precision.md)
+[`timecode-precision.md`](../../cli-anything-plugin/guides/timecode-precision.md)
 guide does not apply.
 
 ## 6. Session Locking
@@ -168,7 +168,7 @@ guide does not apply.
 **Status: N/A (no persistent session).**
 
 Unlike document-based harnesses, this harness does not persist session
-state to disk. The [`session-locking.md`](../cli-anything-plugin/guides/session-locking.md)
+state to disk. The [`session-locking.md`](../../cli-anything-plugin/guides/session-locking.md)
 pattern (`_locked_save_json` with `fcntl.flock`) is not needed because
 there are no session JSON saves. The in-memory `Session` object holds
 only the last URL and current tab index for REPL display, both of
@@ -200,7 +200,7 @@ attempt to reimplement DOM interaction in Python.
 
 ## 8. Validator Checklist — Why Some Items Are N/A
 
-The [`validate.md`](../cli-anything-plugin/commands/validate.md) checklist
+The [`validate.md`](../../cli-anything-plugin/commands/validate.md) checklist
 lists a few "required files" that do not apply to this harness:
 
 | Required by validate.md  | Status    | Reason                                             |
@@ -250,7 +250,7 @@ correct without manual synchronization when safari-mcp adds tools.
 - [safari-mcp GitHub](https://github.com/achiya-automation/safari-mcp)
 - [safari-mcp on npm](https://www.npmjs.com/package/safari-mcp)
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
-- [CLI-Anything HARNESS.md](../cli-anything-plugin/HARNESS.md)
-- [MCP Backend Pattern Guide](../cli-anything-plugin/guides/mcp-backend.md)
-- [Sibling: browser/agent-harness (DOMShell/Chrome)](../browser/agent-harness/)
+- [CLI-Anything HARNESS.md](../../cli-anything-plugin/HARNESS.md)
+- [MCP Backend Pattern Guide](../../cli-anything-plugin/guides/mcp-backend.md)
+- [Sibling: browser/agent-harness (DOMShell/Chrome)](../../browser/agent-harness/)
 - [Local HARNESS.md](HARNESS.md) — harness-specific deep dive
