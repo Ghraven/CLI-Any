@@ -134,6 +134,8 @@ def test_autosave_failure_is_clean_error(monkeypatch):
 def test_render_write_failure_is_runtime_error(monkeypatch, tmp_path):
     import io
 
+    import pytest
+
     class FakeResp(io.BytesIO):
         def __enter__(self):
             return self
