@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import signal
 import time
 from datetime import datetime, timezone
@@ -221,12 +222,23 @@ def _write_live_session_updates(session_dir: Path, updates: Dict[str, Any]) -> D
 
 def _update_current_symlink(session_dir: Path, bundle_dir: str) -> Path:
     current_link = session_dir / "current"
+    copy_marker = current_link / ".cli-anything-current-copy"
     if current_link.is_symlink() or current_link.exists():
         if current_link.is_dir() and not current_link.is_symlink():
-            raise RuntimeError(f"Live preview current path is unexpectedly a directory: {current_link}")
-        current_link.unlink()
+            if not copy_marker.is_file() or copy_marker.read_text(encoding="utf-8") != "preview-live-current/v1\n":
+                raise RuntimeError(f"Live preview current path is unexpectedly a directory: {current_link}")
+            shutil.rmtree(current_link)
+        else:
+            current_link.unlink()
     target = os.path.relpath(Path(bundle_dir).resolve(), session_dir)
-    os.symlink(target, current_link, target_is_directory=True)
+    try:
+        os.symlink(target, current_link, target_is_directory=True)
+    except OSError as exc:
+        if os.name != "nt" or getattr(exc, "winerror", None) != 1314:
+            raise
+        current_link.mkdir()
+        copy_marker.write_text("preview-live-current/v1\n", encoding="utf-8")
+        shutil.copytree(Path(bundle_dir).resolve(), current_link, dirs_exist_ok=True)
     return current_link
 
 
