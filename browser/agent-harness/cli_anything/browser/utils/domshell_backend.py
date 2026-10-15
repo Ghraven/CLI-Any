@@ -37,7 +37,12 @@ log = logging.getLogger(__name__)
 # Configure via environment variables:
 #   DOMSHELL_TOKEN  — auth token (required, must match the running server)
 #   DOMSHELL_PORT   — MCP HTTP port of the running server (default: 3001)
-DEFAULT_SERVER_CMD = "npx"
+def _find_npx_command() -> str | None:
+    """Resolve npx to an executable path, including Windows script suffixes."""
+    return shutil.which("npx") or shutil.which("npx.cmd")
+
+
+DEFAULT_SERVER_CMD = _find_npx_command() or "npx"
 
 
 def _build_server_args() -> list[str]:
@@ -92,14 +97,14 @@ _daemon_lane_lock = threading.Lock()
 
 def _check_npx() -> bool:
     """Check if npx is available."""
-    return shutil.which("npx") is not None
+    return _find_npx_command() is not None
 
 
 def _check_npx_has_domshell() -> bool:
     """Check if DOMShell package is available to npx."""
     try:
         result = subprocess.run(
-            ["npx", "@apireno/domshell", "--version"],
+            [DEFAULT_SERVER_CMD, "@apireno/domshell", "--version"],
             capture_output=True,
             timeout=10,
         )
@@ -137,7 +142,7 @@ def is_available() -> tuple[bool, str]:
     # Try to get version
     try:
         result = subprocess.run(
-            ["npx", "@apireno/domshell", "--version"],
+            [DEFAULT_SERVER_CMD, "@apireno/domshell", "--version"],
             capture_output=True,
             timeout=10,
             text=True,

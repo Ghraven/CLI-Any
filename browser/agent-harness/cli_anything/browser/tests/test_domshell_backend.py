@@ -15,6 +15,31 @@ from cli_anything.browser.core.session import Session
 from cli_anything.browser.utils import domshell_backend as backend
 
 
+def test_find_npx_command_resolves_windows_cmd_extension(monkeypatch):
+    resolved = "C:/Program Files/nodejs/npx.cmd"
+    monkeypatch.setattr(
+        backend.shutil,
+        "which",
+        lambda name: resolved if name == "npx.cmd" else None,
+    )
+
+    assert backend._find_npx_command() == resolved
+    assert backend._check_npx()
+
+
+def test_is_available_uses_resolved_npx_command(monkeypatch):
+    resolved = "C:/Program Files/nodejs/npx.cmd"
+    monkeypatch.setattr(backend, "_find_npx_command", lambda: resolved)
+    monkeypatch.setattr(backend, "DEFAULT_SERVER_CMD", resolved)
+    result = SimpleNamespace(returncode=0, stdout="2.0.10\n")
+
+    with patch.object(backend.subprocess, "run", return_value=result) as run:
+        assert backend.is_available() == (True, "DOMShell 2.0.10 is available")
+
+    assert run.call_count == 2
+    assert all(call.args[0][0] == resolved for call in run.call_args_list)
+
+
 # ── Path translation: harness `/` vs DOMShell `~/` ───────────────────
 
 
