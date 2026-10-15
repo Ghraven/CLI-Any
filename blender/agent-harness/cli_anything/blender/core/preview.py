@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import re
+import shutil
 import signal
 import time
 from datetime import datetime, timezone
@@ -36,6 +37,7 @@ LIVE_PROTOCOL_VERSION = "preview-live/v1"
 DEFAULT_REFRESH_HINT_MS = 1500
 DEFAULT_SOURCE_POLL_MS = 500
 MIN_SOURCE_POLL_MS = 250
+CURRENT_COPY_MARKER = ".cli-anything-current-copy"
 
 RECIPES: Dict[str, Dict[str, Any]] = {
     "quick": {
@@ -213,12 +215,23 @@ def _write_live_session_updates(session_dir: Path, updates: Dict[str, Any]) -> D
 
 def _update_current_symlink(session_dir: Path, bundle_dir: str) -> Path:
     current_link = session_dir / "current"
-    if current_link.is_symlink() or current_link.exists():
-        if current_link.is_dir() and not current_link.is_symlink():
+    if current_link.is_dir() and not current_link.is_symlink():
+        marker = current_link / CURRENT_COPY_MARKER
+        if not marker.is_file() or marker.read_text(encoding="utf-8") != session_dir.name:
             raise RuntimeError(f"Live preview current path is unexpectedly a directory: {current_link}")
+        shutil.rmtree(current_link)
+    elif current_link.is_symlink() or current_link.exists():
         current_link.unlink()
-    target = os.path.relpath(Path(bundle_dir).resolve(), session_dir)
-    os.symlink(target, current_link, target_is_directory=True)
+
+    target_path = Path(bundle_dir).resolve()
+    target = os.path.relpath(target_path, session_dir)
+    try:
+        os.symlink(target, current_link, target_is_directory=True)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) != 1314:
+            raise
+        shutil.copytree(target_path, current_link)
+        (current_link / CURRENT_COPY_MARKER).write_text(session_dir.name, encoding="utf-8")
     return current_link
 
 
