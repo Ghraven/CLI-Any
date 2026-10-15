@@ -39,9 +39,13 @@ setup(
         "defusedxml>=0.7.1",
     ],
     extras_require={
+        "pillow": [
+            "Pillow>=10.0.0",
+        ],
         "dev": [
             "pytest>=7.0.0",
             "pytest-cov>=4.0.0",
+            "Pillow>=10.0.0",
         ],
     },
     entry_points={

@@ -8,41 +8,41 @@ documents with a JSON project format for state tracking.
 
 ```bash
 # From the agent-harness directory:
-pip install click pillow
+pip install -e ".[pillow]"
 
-# No Inkscape installation required for SVG editing.
-# Inkscape is only needed for PDF export and advanced rendering.
+# Inkscape is not required for SVG editing.
+# The optional Pillow extra supports PNG export; Inkscape is used for PDF export and advanced rendering.
 ```
 
 ## Quick Start
 
 ```bash
 # Create a new document
-python3 -m cli.inkscape_cli document new --name "MyDrawing" -o drawing.json
+cli-anything-inkscape document new --name "MyDrawing" -o drawing.json
 
 # Add shapes
-python3 -m cli.inkscape_cli --project drawing.json shape add-rect --x 100 --y 100 --width 200 --height 150
-python3 -m cli.inkscape_cli --project drawing.json shape add-circle --cx 400 --cy 300 --r 80
-python3 -m cli.inkscape_cli --project drawing.json shape add-star --cx 700 --cy 300 --points 5 --outer-r 100
+cli-anything-inkscape --project drawing.json shape add-rect --x 100 --y 100 --width 200 --height 150
+cli-anything-inkscape --project drawing.json shape add-circle --cx 400 --cy 300 --r 80
+cli-anything-inkscape --project drawing.json shape add-star --cx 700 --cy 300 --points 5 --outer-r 100
 
 # Style objects
-python3 -m cli.inkscape_cli --project drawing.json style set-fill 0 "#ff0000"
-python3 -m cli.inkscape_cli --project drawing.json style set-stroke 1 "#000000" --width 3
+cli-anything-inkscape --project drawing.json style set-fill 0 "#ff0000"
+cli-anything-inkscape --project drawing.json style set-stroke 1 "#000000" --width 3
 
 # Add text
-python3 -m cli.inkscape_cli --project drawing.json text add --text "Hello World" --x 100 --y 50 --font-size 36
+cli-anything-inkscape --project drawing.json text add --text "Hello World" --x 100 --y 50 --font-size 36
 
 # Transform objects
-python3 -m cli.inkscape_cli --project drawing.json transform translate 0 50 --ty 25
-python3 -m cli.inkscape_cli --project drawing.json transform rotate 1 45
+cli-anything-inkscape --project drawing.json transform translate 0 50 --ty 25
+cli-anything-inkscape --project drawing.json transform rotate 1 45
 
 # Add gradients
-python3 -m cli.inkscape_cli --project drawing.json gradient add-linear --color1 "#ff0000" --color2 "#0000ff"
-python3 -m cli.inkscape_cli --project drawing.json gradient apply 0 0
+cli-anything-inkscape --project drawing.json gradient add-linear --color1 "#ff0000" --color2 "#0000ff"
+cli-anything-inkscape --project drawing.json gradient apply 0 0
 
 # Export
-python3 -m cli.inkscape_cli --project drawing.json export svg output.svg --overwrite
-python3 -m cli.inkscape_cli --project drawing.json export png output.png --overwrite
+cli-anything-inkscape --project drawing.json export svg output.svg --overwrite
+cli-anything-inkscape --project drawing.json export png output.png --overwrite
 ```
 
 ## JSON Output Mode
@@ -50,16 +50,16 @@ python3 -m cli.inkscape_cli --project drawing.json export png output.png --overw
 All commands support `--json` for machine-readable output:
 
 ```bash
-python3 -m cli.inkscape_cli --json document new -o doc.json
-python3 -m cli.inkscape_cli --json --project doc.json shape list
+cli-anything-inkscape --json document new -o doc.json
+cli-anything-inkscape --json --project doc.json shape list
 ```
 
 ## Interactive REPL
 
 ```bash
-python3 -m cli.inkscape_cli repl
+cli-anything-inkscape repl
 # or with existing project:
-python3 -m cli.inkscape_cli repl --project doc.json
+cli-anything-inkscape repl --project doc.json
 ```
 
 ## Command Groups
@@ -170,24 +170,24 @@ session history - Show undo history
 # From the agent-harness directory:
 
 # Run all tests
-python3 -m pytest cli/tests/ -v
+python3 -m pytest cli_anything/inkscape/tests/ -v
 
 # Run unit tests only
-python3 -m pytest cli/tests/test_core.py -v
+python3 -m pytest cli_anything/inkscape/tests/test_core.py -v
 
 # Run E2E tests only
-python3 -m pytest cli/tests/test_full_e2e.py -v
+python3 -m pytest cli_anything/inkscape/tests/test_full_e2e.py -v
 
 # Run with short traceback
-python3 -m pytest cli/tests/ -v --tb=short
+python3 -m pytest cli_anything/inkscape/tests/ -v --tb=short
 ```
 
 ## Architecture
 
 ```
-cli/
+cli_anything/inkscape/
 ├── __init__.py
-├── __main__.py            # python3 -m cli.inkscape_cli
+├── __main__.py            # python3 -m cli_anything.inkscape
 ├── inkscape_cli.py        # Main CLI entry point (Click + REPL)
 ├── core/
 │   ├── __init__.py
