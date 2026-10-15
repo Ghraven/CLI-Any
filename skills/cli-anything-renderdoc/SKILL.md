@@ -3,7 +3,7 @@ name: "cli-anything-renderdoc"
 description: CLI harness for RenderDoc graphics debugger capture analysis
 version: 0.1.0
 command: cli-anything-renderdoc
-install: pip install cli-anything-renderdoc
+install: pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=renderdoc/agent-harness
 requires:
   - renderdoc (Python bindings from RenderDoc installation)
   - click>=8.0

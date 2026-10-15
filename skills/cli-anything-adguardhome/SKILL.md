@@ -13,7 +13,7 @@ Network-wide ad blocking and DNS management via the AdGuard Home REST API. Desig
 This CLI is installed as part of the cli-anything-adguardhome package:
 
 ```bash
-pip install cli-anything-adguardhome
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=adguardhome/agent-harness
 ```
 
 **Prerequisites:**

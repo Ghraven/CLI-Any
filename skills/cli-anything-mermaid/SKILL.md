@@ -13,7 +13,7 @@ Create, edit, and render Mermaid diagrams via stateful project files and the mer
 This CLI is installed as part of the cli-anything-mermaid package:
 
 ```bash
-pip install cli-anything-mermaid
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=mermaid/agent-harness
 ```
 
 **Prerequisites:**

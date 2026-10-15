@@ -16,7 +16,7 @@ documents, blocks, search, and export.
 
 - SiYuan must be running (Settings → About shows the API token)
 - Python 3.10+
-- Install: `pip install cli-anything-siyuan` or `pip install -e .` from agent-harness/
+- Install: `pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=siyuan/agent-harness` or `pip install -e .` from agent-harness/
 
 ## Command Groups
 

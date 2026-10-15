@@ -478,11 +478,15 @@ class TestGenerateSkillMd:
         assert 'name: "cli-anything-testapp"' in content
         assert 'description: "CLI for TestApp"' in content
 
-    def test_simple_output_has_installation_section(self):
+    def test_generated_installation_uses_harness_source(self):
         metadata = self._make_metadata()
-        content = generate_skill_md_simple(metadata)
-        assert "## Installation" in content
-        assert "pip install cli-anything-testapp" in content
+        simple = generate_skill_md_simple(metadata)
+        rendered = generate_skill_md(metadata)
+
+        for content in (simple, rendered):
+            assert "## Installation" in content
+            assert "python -m pip install -e ." in content
+            assert "pip install cli-anything-testapp" not in content
 
     def test_simple_output_includes_version(self):
         metadata = self._make_metadata(version="2.5.0")

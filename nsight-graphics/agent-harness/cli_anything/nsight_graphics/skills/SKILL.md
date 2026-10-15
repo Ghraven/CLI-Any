@@ -3,7 +3,7 @@ name: cli-anything-nsight-graphics
 description: Windows-first CLI harness for Nsight Graphics capture, GPU Trace summary, and ngfx-replay analysis
 version: 0.2.0
 command: cli-anything-nsight-graphics
-install: pip install cli-anything-nsight-graphics
+install: pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=nsight-graphics/agent-harness
 requires:
   - NVIDIA Nsight Graphics installation
   - Windows host recommended

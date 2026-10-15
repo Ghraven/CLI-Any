@@ -13,7 +13,7 @@ Intelwatch bridges the gap between hacker OSINT and B2B Sales/M&A data. It execu
 This CLI is installed as part of the cli-anything-intelwatch package:
 
 ```bash
-pip install cli-anything-intelwatch
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=intelwatch/agent-harness
 ```
 
 **Prerequisites:**

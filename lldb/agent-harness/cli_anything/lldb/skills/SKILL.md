@@ -3,7 +3,7 @@ name: cli-anything-lldb
 description: Stateful LLDB debugging via LLDB Python API
 version: 1.0.0
 command: cli-anything-lldb
-install: pip install cli-anything-lldb
+install: pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=lldb/agent-harness
 requires:
   - lldb (Python bindings)
   - click>=8.0

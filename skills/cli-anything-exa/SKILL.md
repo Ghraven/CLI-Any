@@ -19,7 +19,6 @@ deep-reasoning) and fetching full-text or highlighted page contents.
 
 ## Prerequisites
 - Python >= 3.10
-- `pip install cli-anything-exa`
 - `export EXA_API_KEY="your-api-key"` (get one at https://dashboard.exa.ai/api-keys)
 
 ## Installation

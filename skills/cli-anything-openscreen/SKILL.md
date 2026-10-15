@@ -17,7 +17,7 @@ trimming, annotations, and beautiful backgrounds.
 ## Installation
 
 ```bash
-pip install cli-anything-openscreen
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=openscreen/agent-harness
 ```
 
 **Prerequisites:**

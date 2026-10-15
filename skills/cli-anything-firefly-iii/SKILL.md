@@ -12,7 +12,7 @@ Firefly III command-line interface based on CLI-Anything specification. Converts
 ## Installation
 
 ```bash
-pip install cli-anything-firefly-iii
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=firefly-iii/agent-harness
 ```
 
 ## Prerequisites

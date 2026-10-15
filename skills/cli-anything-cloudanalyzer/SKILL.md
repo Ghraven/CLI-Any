@@ -12,7 +12,7 @@ Agent-friendly command-line harness for [CloudAnalyzer](https://github.com/rsasa
 ## Installation
 
 ```bash
-pip install cli-anything-cloudanalyzer
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=cloudanalyzer/agent-harness
 ```
 
 **Prerequisites:**
