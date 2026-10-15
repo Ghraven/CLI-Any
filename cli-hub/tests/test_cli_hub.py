@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -294,7 +295,7 @@ def _make_preview_session(tmp_path: Path, *, with_trajectory: bool = False) -> P
     bundle_dir = _make_preview_bundle(tmp_path)
     session_dir = tmp_path / "live-session"
     session_dir.mkdir()
-    (session_dir / "current").symlink_to(bundle_dir, target_is_directory=True)
+    shutil.copytree(bundle_dir, session_dir / "current")
     session = {
         "protocol_version": "preview-live/v1",
         "software": "shotcut",
@@ -659,7 +660,7 @@ class TestMatrixSkill:
         mock_resolve.side_effect = lambda cli: f"/tmp/{cli['name']}/skills/SKILL.md" if cli["name"] != "blender" else None
 
         rendered = render_matrix_skill_file(SAMPLE_MATRIX_REGISTRY["matrices"][0], installed={"gimp": {}, "audacity": {}})
-        content = Path(rendered).read_text()
+        content = Path(rendered).read_text(encoding="utf-8")
         assert "## Installed CLI Skills" in content
         assert "/tmp/gimp/skills/SKILL.md" in content
         assert "skills/cli-anything-gimp/SKILL.md" in content
@@ -750,7 +751,7 @@ class TestMultiApproachRendering:
         mock_resolve.return_value = None
 
         rendered = render_matrix_skill_file(SAMPLE_MATRIX_REGISTRY["matrices"][0], installed={"gimp": {}})
-        content = Path(rendered).read_text()
+        content = Path(rendered).read_text(encoding="utf-8")
         assert "## Stage Tooling Overview" in content
         assert "## Skill Discovery Commands" not in content
         assert "npx skills search" not in content
@@ -789,8 +790,10 @@ class TestPreviewBundle:
         content = output_path.read_text()
         assert "CLI-Anything Preview Bundle" in content
         assert "Quick preview rendered" in content
-        assert "artifacts/hero.png" in content
-        assert "artifacts/preview.mp4" in content
+        expected_hero = os.path.relpath(bundle_dir / "artifacts" / "hero.png", output_path.parent)
+        expected_video = os.path.relpath(bundle_dir / "artifacts" / "preview.mp4", output_path.parent)
+        assert expected_hero in content
+        assert expected_video in content
 
     def test_previews_inspect_cli_command(self, tmp_path):
         bundle_dir = _make_preview_bundle(tmp_path)
@@ -1238,6 +1241,10 @@ class TestScriptStrategy:
 class TestAnalytics:
     """Tests for analytics.py — opt-out, event firing, event names."""
 
+    @pytest.fixture(autouse=True)
+    def _isolate_home_directory(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+
     def test_analytics_enabled_by_default(self):
         with patch.dict(os.environ, {}, clear=True):
             assert _is_enabled()
@@ -1567,24 +1574,25 @@ class TestCLI:
     @patch("cli_hub.cli.detect_invocation_context")
     @patch("cli_hub.cli.get_matrix", return_value=SAMPLE_MATRIX_REGISTRY["matrices"][0])
     @patch("cli_hub.cli.get_installed", return_value={"gimp": {"version": "1.0.0"}})
-    @patch("cli_hub.cli.get_rendered_matrix_skill_path", return_value=Path("/tmp/video-creation.SKILL.md"))
-    @patch("pathlib.Path.exists", return_value=True)
+    @patch("cli_hub.cli.get_rendered_matrix_skill_path")
     def test_matrix_info_command(
         self,
-        mock_exists,
         mock_rendered,
         mock_installed,
         mock_get_matrix,
         mock_detect,
         mock_visit,
         mock_first_run,
+        tmp_path,
     ):
         mock_detect.return_value = self.human_detection
+        mock_rendered.return_value = tmp_path / "video-creation.SKILL.md"
+        mock_rendered.return_value.write_text("# matrix skill\n", encoding="utf-8")
         result = self.runner.invoke(main, ["matrix", "info", "video-creation"])
         assert "Video Creation & Editing" in result.output
         assert "cli-hub matrix install video-creation" in result.output
         assert "cli-hub-matrix/video-creation/SKILL.md" in result.output
-        assert "Local skill: /tmp/video-creation.SKILL.md" in result.output
+        assert f"Local skill: {tmp_path / 'video-creation.SKILL.md'}" in result.output
         assert "Capabilities:" in result.output
         assert "package.thumbnail" in result.output
         assert "Known Gaps:" in result.output
