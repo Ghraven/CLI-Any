@@ -1,3 +1,3 @@
-"""Allow running as python3 -m cli.inkscape_cli"""
+"""Run the installed CLI as ``python -m cli_anything.inkscape``."""
 from cli_anything.inkscape.inkscape_cli import main
 main()

@@ -4,21 +4,21 @@ description: >-
   Command-line interface for Obs Studio - A stateful command-line interface for OBS Studio scene collection editing, following the same patter...
 ---
 
-# cli-anything-obs_studio
+# cli-anything-obs-studio
 
 A stateful command-line interface for OBS Studio scene collection editing, following the same patterns as the Blender CLI harness. Uses a JSON scene collection format. No OBS installation required for editing.
 
 ## Installation
 
-This CLI is installed as part of the cli-anything-obs_studio package:
+Install the cli-anything-obs-studio package to get its console command:
 
 ```bash
-pip install cli-anything-obs_studio
+pip install cli-anything-obs-studio
 ```
 
 **Prerequisites:**
 - Python 3.10+
-- obs_studio must be installed on your system
+- OBS Studio is not required to edit JSON scene collections.
 
 
 ## Usage
@@ -27,16 +27,16 @@ pip install cli-anything-obs_studio
 
 ```bash
 # Show help
-cli-anything-obs_studio --help
+cli-anything-obs-studio --help
 
 # Start interactive REPL mode
-cli-anything-obs_studio
+cli-anything-obs-studio
 
 # Create a new project
-cli-anything-obs_studio project new -o project.json
+cli-anything-obs-studio project new -o project.json
 
 # Run with JSON output (for agent consumption)
-cli-anything-obs_studio --json project info -p project.json
+cli-anything-obs-studio --json project info -p project.json
 ```
 
 ### REPL Mode
@@ -44,7 +44,7 @@ cli-anything-obs_studio --json project info -p project.json
 When invoked without a subcommand, the CLI enters an interactive REPL session:
 
 ```bash
-cli-anything-obs_studio
+cli-anything-obs-studio
 # Enter commands interactively with tab-completion and history
 ```
 
@@ -168,9 +168,9 @@ Session management commands.
 Create a new obs_studio project file.
 
 ```bash
-cli-anything-obs_studio project new -o myproject.json
+cli-anything-obs-studio project new -o myproject.json
 # Or with JSON output for programmatic use
-cli-anything-obs_studio --json project new -o myproject.json
+cli-anything-obs-studio --json project new -o myproject.json
 ```
 
 
@@ -179,7 +179,7 @@ cli-anything-obs_studio --json project new -o myproject.json
 Start an interactive session with undo/redo support.
 
 ```bash
-cli-anything-obs_studio
+cli-anything-obs-studio
 # Enter commands interactively
 # Use 'help' to see available commands
 # Use 'undo' and 'redo' for history navigation
@@ -203,10 +203,10 @@ All commands support dual output modes:
 
 ```bash
 # Human output
-cli-anything-obs_studio project info -p project.json
+cli-anything-obs-studio project info -p project.json
 
 # JSON output for agents
-cli-anything-obs_studio --json project info -p project.json
+cli-anything-obs-studio --json project info -p project.json
 ```
 
 ## For AI Agents
