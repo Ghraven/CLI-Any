@@ -11,7 +11,7 @@ AI-powered video captioning tool. Transcribe speech → optimize subtitles → t
 ## Installation
 
 ```bash
-pip install cli-anything-videocaptioner
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=videocaptioner/agent-harness
 ```
 
 **Prerequisites:**

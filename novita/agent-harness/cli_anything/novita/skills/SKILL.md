@@ -14,7 +14,7 @@ A CLI harness for **Novita AI** - an OpenAI-compatible API service for AI models
 This CLI is installed as part of the cli-anything-novita package:
 
 ```bash
-pip install cli-anything-novita
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=novita/agent-harness
 ```
 
 **Prerequisites:**

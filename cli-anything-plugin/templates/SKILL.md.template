@@ -11,10 +11,10 @@ description: >-
 
 ## Installation
 
-This CLI is installed as part of the cli-anything-{{ software_name }} package:
+Install from this harness's `agent-harness` source directory:
 
 ```bash
-pip install cli-anything-{{ software_name }}
+python -m pip install -e .
 ```
 
 **Prerequisites:**

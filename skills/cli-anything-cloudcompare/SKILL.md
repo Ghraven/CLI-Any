@@ -12,7 +12,7 @@ Agent-friendly command-line harness for [CloudCompare](https://cloudcompare.org)
 ## Installation
 
 ```bash
-pip install cli-anything-cloudcompare
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=cloudcompare/agent-harness
 ```
 
 **Prerequisites:**

@@ -30,7 +30,7 @@ brew install tigrisdata/tap/tigris
 tigris login
 
 # 3. Install this harness
-pip install cli-anything-tigris
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=tigris/agent-harness
 ```
 
 **Prerequisites:**

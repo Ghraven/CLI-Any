@@ -14,7 +14,7 @@ A stateless command-line interface for ChromaDB vector database, built on the HT
 This CLI is installed as part of the cli-anything-chromadb package:
 
 ```bash
-pip install cli-anything-chromadb
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=chromadb/agent-harness
 ```
 
 **Prerequisites:**

@@ -13,7 +13,7 @@ AI image generation workflow management via the ComfyUI REST API. Designed for A
 This CLI is installed as part of the cli-anything-comfyui package:
 
 ```bash
-pip install cli-anything-comfyui
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=comfyui/agent-harness
 ```
 
 **Prerequisites:**

@@ -14,7 +14,7 @@ Local LLM inference and model management via the Ollama REST API. Designed for A
 This CLI is installed as part of the cli-anything-ollama package:
 
 ```bash
-pip install cli-anything-ollama
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=ollama/agent-harness
 ```
 
 **Prerequisites:**

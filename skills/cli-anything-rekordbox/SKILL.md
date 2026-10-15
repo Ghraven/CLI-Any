@@ -11,7 +11,7 @@ Agent-native CLI for Pioneer Rekordbox 6/7. Drives the DJ library and live decks
 ## Installation
 
 ```bash
-pip install cli-anything-rekordbox
+pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=rekordbox/agent-harness
 ```
 
 **Prerequisites:**

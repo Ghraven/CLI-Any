@@ -11,7 +11,7 @@ Stateful CLI harness for iTerm2. Controls a live iTerm2 process via the iTerm2 P
 
 1. **macOS + iTerm2** running: `brew install --cask iterm2`
 2. **Python API enabled**: iTerm2 → Preferences → General → Magic → Enable Python API
-3. **Install**: `pip install cli-anything-iterm2` (or `pip install -e .` from source)
+3. **Install**: `pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=iterm2/agent-harness` (or `pip install -e .` from `iterm2/agent-harness`).
 
 ## Basic Syntax
 
